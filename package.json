@@ -1,0 +1,21 @@
+{
+  "name": "stabletrade-passport",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stablecoin escrow, invoice financing, and SME credit passport demo for the Stablecoin Commerce Stack Challenge.",
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
+  },
+  "keywords": [
+    "arc",
+    "circle",
+    "usdc",
+    "stablecoin",
+    "trade-finance"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

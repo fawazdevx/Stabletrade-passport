@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StableTrade Passport</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">StableTrade Passport</p>
+        <h1>USDC escrow and receivables financing for UAE trade corridors</h1>
+      </div>
+      <div class="network">
+        <span class="dot"></span>
+        Arc Testnet demo
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="kicker">Track 2: SME Trade Finance & Working Capital</p>
+          <h2>Turn verified invoices into programmable working capital.</h2>
+          <p>
+            Importers fund milestone escrow in USDC, exporters receive early payment, and every settlement becomes part of a reusable SME credit passport.
+          </p>
+          <div class="hero-actions">
+            <button id="seedAdvance" class="primary">Run demo settlement</button>
+            <a class="secondary" href="/architecture.html">View architecture</a>
+          </div>
+        </div>
+        <div class="settlement-panel">
+          <div class="metric">
+            <span>Escrowed volume</span>
+            <strong id="volume">$0</strong>
+          </div>
+          <div class="metric">
+            <span>Avg. advance rate</span>
+            <strong id="advanceRate">0%</strong>
+          </div>
+          <div class="metric">
+            <span>Settled invoices</span>
+            <strong id="settledCount">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="create-panel">
+          <h2>Create invoice</h2>
+          <form id="invoiceForm">
+            <label>
+              Buyer
+              <input name="buyer" value="Dubai Equipment Mart" required>
+            </label>
+            <label>
+              Seller
+              <input name="seller" value="Lagos Parts Cooperative" required>
+            </label>
+            <label>
+              Corridor
+              <input name="corridor" value="UAE -> Nigeria">
+            </label>
+            <div class="split">
+              <label>
+                Amount USDC
+                <input name="amount" type="number" min="1" value="12400" required>
+              </label>
+              <label>
+                Due days
+                <input name="dueDays" type="number" min="1" value="21">
+              </label>
+            </div>
+            <button type="submit" class="primary full">Create trade flow</button>
+          </form>
+        </aside>
+
+        <section class="invoice-list">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Live workflow</p>
+              <h2>Invoices</h2>
+            </div>
+            <button id="refresh" class="icon-button" aria-label="Refresh invoices">↻</button>
+          </div>
+          <div id="invoices" class="cards"></div>
+        </section>
+
+        <aside class="event-panel">
+          <p class="eyebrow">Audit trail</p>
+          <h2>Circle + Arc events</h2>
+          <div id="events" class="events"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

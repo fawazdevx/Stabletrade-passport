@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StableTrade Architecture</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+      .diagram-page { max-width: 1120px; margin: 0 auto; }
+      .diagram { width: 100%; min-height: 560px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); }
+      pre { padding: 22px; overflow: auto; white-space: pre-wrap; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Architecture</p>
+        <h1>Circle tools on Arc for SME trade finance</h1>
+      </div>
+      <a class="secondary" href="/">Back to app</a>
+    </header>
+    <main class="diagram-page">
+      <pre class="diagram">flowchart LR
+  Importer[UAE Importer] --> Frontend[StableTrade Passport Web App]
+  Exporter[Global Exporter] --> Frontend
+  Financier[SME Financier] --> Frontend
+  Frontend --> API[Node Demo API]
+  API --> Wallets[Circle Wallets: embedded importer, exporter, financier wallets]
+  API --> Gateway[Circle Gateway: treasury movement and payout routing]
+  API --> Bridge[CCTP + Bridge Kit: cross-chain USDC when funds originate elsewhere]
+  Wallets --> Arc[Arc Testnet]
+  Gateway --> Arc
+  Bridge --> Arc
+  Arc --> Contract[TradeEscrow.sol: invoice escrow, advance, delivery release]
+  Contract --> Passport[SME Credit Passport: repayment and settlement history]
+  Passport --> Financier</pre>
+    </main>
+  </body>
+</html>
