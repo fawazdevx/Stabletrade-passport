@@ -15,22 +15,32 @@
   button {
     font: inherit;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex min-h-10 items-center gap-2 rounded-lg border border-teal bg-teal px-4 text-sm font-black text-white shadow-sm transition hover:bg-teal disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-xl border border-transparent bg-gradient-to-r from-teal-500 to-emerald-500 px-4 text-sm font-black text-white shadow-lg shadow-teal-500/30 transition-all hover:scale-105 hover:shadow-xl hover:shadow-teal-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100;
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-10 items-center gap-2 rounded-lg border border-teal-800 bg-[#0d2b27] px-4 text-sm font-black text-teal-100 shadow-sm transition hover:border-teal hover:text-white disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/20 bg-slate-900/50 px-4 text-sm font-black text-slate-200 shadow-sm backdrop-blur-sm transition-all hover:border-teal-500/50 hover:bg-slate-800/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  .feature {
-    @apply flex min-h-12 items-center gap-2 rounded-lg border border-teal-800 bg-[#0d2b27] px-3 text-sm font-black text-teal-100;
+  .feature-modern {
+    @apply flex min-h-12 items-center gap-2 rounded-lg border border-white/10 bg-slate-950/50 px-3 text-sm font-black text-slate-200 backdrop-blur-sm;
   }
 
   .field {
-    @apply h-11 rounded-lg border border-teal-800 bg-[#031816] px-3 text-teal-50 outline-none ring-teal/20 placeholder:text-teal-100/40 focus:ring-4;
+    @apply h-11 rounded-lg border border-white/20 bg-slate-950/50 px-3 text-slate-100 outline-none ring-teal-500/30 backdrop-blur-sm placeholder:text-slate-500 focus:border-teal-500/50 focus:ring-4;
+  }
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 }

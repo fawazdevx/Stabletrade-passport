@@ -19,4 +19,4 @@ backend/node_modules/
 docs/
 
 # Dotenv file
-.env
+frontend/.env.example

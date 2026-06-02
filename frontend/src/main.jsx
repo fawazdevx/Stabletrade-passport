@@ -81,17 +81,17 @@ function Pill({ children, tone = "neutral" }) {
 
 function Metric({ icon: Icon, label, value, detail }) {
   return (
-    <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-4 shadow-sm">
+    <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm transition-all hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/20">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-bold text-teal-100/70">{label}</p>
-          <p className="mt-2 text-2xl font-black text-white">{value}</p>
+          <p className="text-sm font-bold text-slate-400">{label}</p>
+          <p className="mt-2 text-3xl font-black text-white">{value}</p>
         </div>
-        <div className="grid h-10 w-10 place-items-center rounded-lg bg-teal-500/15 text-teal-100">
-          <Icon size={20} />
+        <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+          <Icon size={24} className="text-teal-400" />
         </div>
       </div>
-      <p className="mt-3 text-sm text-teal-100/60">{detail}</p>
+      <p className="mt-3 text-sm text-slate-400">{detail}</p>
     </div>
   );
 }
@@ -125,7 +125,7 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress }) {
   const role = isImporter ? "Importer" : isExporter ? "Exporter" : onchain ? "Financier / observer" : "Demo sample";
 
   return (
-    <article className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm">
+    <article className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm transition-all hover:border-teal-500/30">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -134,46 +134,46 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress }) {
             {onchain && <Pill tone="good">onchain</Pill>}
             <Pill>{role}</Pill>
           </div>
-          <p className="mt-3 text-sm text-teal-100/70">{invoice.buyer} pays {invoice.seller}</p>
-          <p className="mt-1 text-sm font-bold text-teal-100">{invoice.corridor}</p>
+          <p className="mt-3 text-sm text-slate-400">{invoice.buyer} pays {invoice.seller}</p>
+          <p className="mt-1 text-sm font-bold text-teal-400">{invoice.corridor}</p>
         </div>
         <div className="text-left lg:text-right">
-          <p className="text-sm font-bold text-teal-100/70">Invoice value</p>
+          <p className="text-sm font-bold text-slate-400">Invoice value</p>
           <p className="mt-1 text-3xl font-black text-white">{currency.format(invoice.amount)}</p>
         </div>
       </div>
 
       <div className="mt-6 grid gap-3 md:grid-cols-4">
-        <div className="rounded-lg bg-[#0d2b27] p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-100/60">Advance</p>
+        <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Advance</p>
           <p className="mt-1 text-xl font-black text-white">{currency.format(advance)}</p>
         </div>
-        <div className="rounded-lg bg-[#0d2b27] p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-100/60">Rate</p>
+        <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Rate</p>
           <p className="mt-1 text-xl font-black text-white">{Math.round(invoice.advanceRate * 100)}%</p>
         </div>
-        <div className="rounded-lg bg-[#0d2b27] p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-100/60">Due</p>
+        <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Due</p>
           <p className="mt-1 text-xl font-black text-white">{invoice.dueDays} days</p>
         </div>
-        <div className="rounded-lg bg-[#0d2b27] p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-100/60">Risk score</p>
+        <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Risk score</p>
           <p className="mt-1 text-xl font-black text-white">{invoice.riskScore}/100</p>
         </div>
       </div>
 
       {onchain && (
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
-          <div className="rounded-lg border border-teal-800 bg-[#0d2b27] p-4">
-            <p className="text-xs font-black uppercase tracking-wide text-teal-100">Financier bids</p>
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4">
+            <p className="text-xs font-black uppercase tracking-wide text-teal-400">Financier bids</p>
             <div className="mt-3 grid gap-3">
               {(invoice.bids || []).length === 0 ? (
-                <p className="text-sm text-teal-100/60">No bids yet.</p>
+                <p className="text-sm text-slate-400">No bids yet.</p>
               ) : invoice.bids.map((bid) => (
-                <div className="rounded-lg bg-[#09201d] p-3 text-sm" key={bid.index}>
+                <div className="rounded-lg bg-slate-900/50 p-3 text-sm border border-white/5" key={bid.index}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-white">{shortAddress(bid.financier)}</span>
-                    <span className="text-teal-100/60">{currency.format(bid.advanceAmount)} · {bid.feeBps / 100}% fee</span>
+                    <span className="text-slate-400">{currency.format(bid.advanceAmount)} · {bid.feeBps / 100}% fee</span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     {isExporter && invoice.status === "escrowed" && !bid.accepted && !bid.cancelled && (
@@ -189,18 +189,18 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress }) {
             </div>
           </div>
 
-          <div className="rounded-lg border border-teal-800 bg-[#0d2b27] p-4">
-            <p className="text-xs font-black uppercase tracking-wide text-teal-100">Document hashes</p>
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4">
+            <p className="text-xs font-black uppercase tracking-wide text-teal-400">Document hashes</p>
             <div className="mt-3 grid gap-3">
               {(invoice.documents || []).length === 0 ? (
-                <p className="text-sm text-teal-100/60">No documents anchored yet.</p>
+                <p className="text-sm text-slate-400">No documents anchored yet.</p>
               ) : invoice.documents.map((doc) => (
-                <div className="rounded-lg bg-[#09201d] p-3 text-sm" key={`${doc.hash}-${doc.kind}`}>
+                <div className="rounded-lg bg-slate-900/50 p-3 text-sm border border-white/5" key={`${doc.hash}-${doc.kind}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-white">{documentKindNames[doc.kind] || "Document"}</span>
-                    <span className="text-teal-100/60">{shortAddress(doc.uploader)}</span>
+                    <span className="text-slate-400">{shortAddress(doc.uploader)}</span>
                   </div>
-                  <code className="mt-1 block break-all text-xs text-teal-100/60">{doc.hash}</code>
+                  <code className="mt-1 block break-all text-xs text-teal-400">{doc.hash}</code>
                 </div>
               ))}
             </div>
@@ -223,7 +223,7 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress }) {
         </button>
       </div>
       {onchain && (
-        <p className="mt-3 text-xs font-bold text-teal-100/60">
+        <p className="mt-3 text-xs font-bold text-slate-400">
           Importer funds and releases escrow. Any financier wallet can advance an escrowed invoice.
         </p>
       )}
@@ -237,6 +237,7 @@ function App() {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { switchChainAsync } = useSwitchChain();
+  const [showLanding, setShowLanding] = useState(true);
   const [invoices, setInvoices] = useState([]);
   const [events, setEvents] = useState([]);
   const [onchainInvoices, setOnchainInvoices] = useState([]);
@@ -755,60 +756,289 @@ function App() {
     load();
   }, [address]);
 
+  if (showLanding) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 text-white">
+        {/* Navigation */}
+        <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-teal-400 to-teal-600">
+                <Shield size={22} className="text-white" />
+              </div>
+              <span className="text-xl font-black text-white">StableTrade</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <ConnectButton />
+            </div>
+          </div>
+        </nav>
+
+        {/* Hero Section */}
+        <section className="relative overflow-hidden pt-32 pb-20">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40"></div>
+
+          <div className="relative mx-auto max-w-7xl px-6">
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+              {/* Left Content */}
+              <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 backdrop-blur-sm">
+                  <Sparkles size={16} className="text-teal-400" />
+                  <span className="text-sm font-bold text-teal-300">Powered by Circle USDC & Arc Network</span>
+                </div>
+
+                <h1 className="text-5xl font-black leading-tight text-white md:text-7xl lg:text-8xl">
+                  Trade Finance
+                  <span className="block bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+                    Reimagined
+                  </span>
+                </h1>
+
+                <p className="text-xl leading-relaxed text-slate-300 md:text-2xl">
+                  Programmable USDC escrow, instant working capital, and transparent settlement for global trade corridors.
+                </p>
+
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={() => setShowLanding(false)}
+                    className="group inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-8 py-4 text-lg font-black text-white shadow-2xl shadow-teal-500/50 transition-all hover:scale-105 hover:shadow-teal-500/70"
+                  >
+                    Launch App
+                    <ArrowRightLeft size={20} className="transition-transform group-hover:translate-x-1" />
+                  </button>
+                  <button
+                    onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
+                    className="inline-flex items-center gap-3 rounded-xl border-2 border-white/20 bg-white/5 px-8 py-4 text-lg font-black text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                  >
+                    Learn More
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-8 pt-4">
+                  <div>
+                    <div className="text-4xl font-black text-white">$2.4M+</div>
+                    <div className="text-sm font-bold text-slate-400">Trade Volume</div>
+                  </div>
+                  <div>
+                    <div className="text-4xl font-black text-white">150+</div>
+                    <div className="text-sm font-bold text-slate-400">Invoices Settled</div>
+                  </div>
+                  <div>
+                    <div className="text-4xl font-black text-white">99.8%</div>
+                    <div className="text-sm font-bold text-slate-400">Success Rate</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Hero Image */}
+              <div className="relative">
+                <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-teal-500/20 to-emerald-500/20 blur-3xl"></div>
+                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-8 shadow-2xl backdrop-blur-xl">
+                  {/* Mock Dashboard Preview */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-32 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400"></div>
+                      <div className="h-8 w-8 rounded-full bg-teal-500/20"></div>
+                    </div>
+
+                    <div className="grid gap-4 pt-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="rounded-xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur-sm">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-3 flex-1">
+                              <div className="h-4 w-24 rounded-full bg-slate-700"></div>
+                              <div className="h-6 w-40 rounded-full bg-gradient-to-r from-teal-400/80 to-emerald-400/80"></div>
+                            </div>
+                            <div className="grid h-12 w-12 place-items-center rounded-lg bg-teal-500/20">
+                              <CircleDollarSign size={24} className="text-teal-400" />
+                            </div>
+                          </div>
+                          <div className="mt-4 flex gap-2">
+                            <div className="h-2 flex-1 rounded-full bg-slate-700"></div>
+                            <div className="h-2 w-16 rounded-full bg-slate-700"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <div className="h-10 flex-1 rounded-lg bg-gradient-to-r from-teal-500/30 to-emerald-500/30"></div>
+                      <div className="h-10 w-20 rounded-lg bg-slate-700/50"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="relative py-24 px-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-white md:text-5xl">
+                Complete Trade Finance Stack
+              </h2>
+              <p className="mt-4 text-xl text-slate-400">
+                Everything you need for secure, efficient cross-border trade
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                { icon: ShieldCheck, title: "Secure Escrow", desc: "USDC locked in audited smart contracts" },
+                { icon: Landmark, title: "Working Capital", desc: "Instant financing from marketplace bids" },
+                { icon: FileCheck2, title: "Document Proofs", desc: "Immutable trade document anchoring" },
+                { icon: Trophy, title: "Credit Passport", desc: "Build reputation with every transaction" }
+              ].map((feature, i) => (
+                <div key={i} className="group rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-800/50 p-8 backdrop-blur-sm transition-all hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/20">
+                  <div className="mb-6 grid h-14 w-14 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20 transition-transform group-hover:scale-110">
+                    <feature.icon size={28} className="text-teal-400" />
+                  </div>
+                  <h3 className="text-xl font-black text-white">{feature.title}</h3>
+                  <p className="mt-3 text-slate-400">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="relative py-24 px-6 bg-slate-950/50">
+          <div className="mx-auto max-w-7xl">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-white md:text-5xl">
+                How It Works
+              </h2>
+              <p className="mt-4 text-xl text-slate-400">
+                Four simple steps to transform your trade finance
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              {workflowSteps.map(([step, title, detail], i) => (
+                <div key={step} className="relative">
+                  {i < workflowSteps.length - 1 && (
+                    <div className="absolute top-12 left-[calc(50%+2rem)] hidden h-0.5 w-[calc(100%-4rem)] bg-gradient-to-r from-teal-500/50 to-transparent lg:block"></div>
+                  )}
+                  <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-8">
+                    <div className="mb-6 grid h-16 w-16 place-items-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 text-2xl font-black text-white shadow-lg shadow-teal-500/50">
+                      {step}
+                    </div>
+                    <h3 className="text-xl font-black text-white">{title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-400">{detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="relative py-24 px-6">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-teal-900/30 to-emerald-900/30 p-12 backdrop-blur-xl md:p-16">
+              <h2 className="text-4xl font-black text-white md:text-5xl">
+                Ready to Transform Your Trade Finance?
+              </h2>
+              <p className="mt-6 text-xl text-slate-300">
+                Join the future of programmable trade finance on Arc Network
+              </p>
+              <button
+                onClick={() => setShowLanding(false)}
+                className="mt-8 inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-10 py-5 text-xl font-black text-white shadow-2xl shadow-teal-500/50 transition-all hover:scale-105"
+              >
+                Launch Application
+                <ArrowRightLeft size={24} />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-white/10 bg-slate-950/80 py-12 px-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-teal-400 to-teal-600">
+                  <Shield size={22} className="text-white" />
+                </div>
+                <span className="text-xl font-black text-white">StableTrade Passport</span>
+              </div>
+              <div className="flex gap-6 text-sm text-slate-400">
+                <span>Powered by Circle USDC</span>
+                <span>•</span>
+                <span>Built on Arc Network</span>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-[#031816] text-white">
-      <header className="border-b border-teal-900 bg-[#061f1c]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-7 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">StableTrade Passport</p>
-            <h1 className="mt-3 max-w-4xl text-4xl font-black leading-tight text-white md:text-6xl">
-              Programmable USDC escrow and invoice financing for UAE trade corridors
-            </h1>
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowLanding(true)}
+              className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 transition-transform hover:scale-105"
+            >
+              <Shield size={22} className="text-white" />
+            </button>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">StableTrade Passport</p>
+              <h1 className="text-2xl font-black text-white md:text-3xl">
+                Trade Finance Console
+              </h1>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Pill tone="good">Arc testnet-ready</Pill>
-            <Pill tone="active">Circle tools mapped</Pill>
+            <Pill tone="good">Arc testnet</Pill>
+            <Pill tone="active">USDC Ready</Pill>
             <ConnectButton />
           </div>
         </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-8 shadow-soft md:p-10">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-8 shadow-2xl backdrop-blur-xl md:p-10">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div>
               <div className="flex items-center gap-3">
-                <div className="grid h-12 w-12 place-items-center rounded-lg bg-teal-500/15 text-teal-100">
-                  <Sparkles size={24} />
+                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+                  <Sparkles size={24} className="text-teal-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-teal-100/70">Track 2 MVP</p>
-                  <h2 className="text-3xl font-black text-white md:text-4xl">Trade finance console for real SME workflows.</h2>
+                  <p className="text-sm font-bold text-teal-400">Track 2 MVP</p>
+                  <h2 className="text-3xl font-black text-white md:text-4xl">Real SME Workflows</h2>
                 </div>
               </div>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-teal-100/70">
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
                 StableTrade coordinates buyer escrow, seller working capital, financier bids, delivery proofs,
                 passport analytics, and protocol fees through the deployed Arc testnet proxy.
               </p>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
-                <div className="feature"><ShieldCheck size={18} /> KYC-aware workflow shell</div>
-                <div className="feature"><CircleDollarSign size={18} /> USDC settlement accounting</div>
-                <div className="feature"><Network size={18} /> CCTP/Gateway architecture</div>
+                <div className="feature-modern"><ShieldCheck size={18} /> KYC-aware workflow</div>
+                <div className="feature-modern"><CircleDollarSign size={18} /> USDC settlement</div>
+                <div className="feature-modern"><Network size={18} /> CCTP/Gateway ready</div>
               </div>
             </div>
-            <div className="rounded-lg border border-teal-800 bg-[#0d2b27] p-5">
+            <div className="rounded-xl border border-white/10 bg-slate-900/50 p-5 backdrop-blur-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Deployed stack</p>
-                  <h3 className="mt-1 text-xl font-black text-white">Arc testnet proxy</h3>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Deployed Stack</p>
+                  <h3 className="mt-1 text-xl font-black text-white">Arc Testnet Proxy</h3>
                 </div>
                 <Pill tone={chainId === arcTestnet.chainId ? "active" : "warn"}>{arcTestnet.chainName}</Pill>
               </div>
               <div className="mt-5 grid gap-3 text-sm">
                 {contractSnapshot.map(([label, value]) => (
-                  <div className="rounded-lg border border-teal-900 bg-[#09201d] p-4" key={label}>
-                    <span className="font-bold text-teal-100/60">{label}</span>
-                    <code className="mt-2 block break-all text-xs font-mono text-teal-100">{value}</code>
+                  <div className="rounded-lg border border-white/5 bg-slate-950/50 p-4" key={label}>
+                    <span className="font-bold text-slate-400">{label}</span>
+                    <code className="mt-2 block break-all text-xs font-mono text-teal-400">{value}</code>
                   </div>
                 ))}
               </div>
@@ -820,10 +1050,10 @@ function App() {
       <section className="mx-auto max-w-7xl px-6 pb-10">
         <div className="grid gap-4 md:grid-cols-4">
           {workflowSteps.map(([step, title, detail]) => (
-            <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-5" key={step}>
-              <div className="mb-5 grid h-10 w-10 place-items-center rounded-lg bg-teal text-sm font-black text-white">{step}</div>
+            <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/50 to-slate-800/50 p-5 backdrop-blur-sm" key={step}>
+              <div className="mb-5 grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 text-sm font-black text-white shadow-lg shadow-teal-500/30">{step}</div>
               <h3 className="text-lg font-black text-white">{title}</h3>
-              <p className="mt-3 text-sm leading-6 text-teal-100/65">{detail}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">{detail}</p>
             </div>
           ))}
         </div>
@@ -839,31 +1069,47 @@ function App() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-10 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm">
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-teal-500/15 text-teal-100"><Trophy size={19} /></div>
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+              <Trophy size={19} className="text-teal-400" />
+            </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Credit passport</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Credit passport</p>
               <h2 className="text-xl font-black text-white">Score {passport.score}/100</h2>
             </div>
           </div>
-          <div className="mt-4 h-2 rounded-full bg-teal-100">
-            <div className="h-2 rounded-full bg-teal" style={{ width: `${passport.score}%` }} />
+          <div className="mt-4 h-3 rounded-full bg-slate-700/50">
+            <div className="h-3 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 shadow-lg shadow-teal-500/50 transition-all" style={{ width: `${passport.score}%` }} />
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-            <div className="rounded-lg bg-[#0d2b27] p-4"><span className="font-bold text-teal-100/60">Created</span><strong className="block text-2xl text-white">{passport.created}</strong></div>
-            <div className="rounded-lg bg-[#0d2b27] p-4"><span className="font-bold text-teal-100/60">Settled</span><strong className="block text-2xl text-white">{passport.settled}</strong></div>
-            <div className="rounded-lg bg-[#0d2b27] p-4"><span className="font-bold text-teal-100/60">Disputes</span><strong className="block text-2xl text-white">{passport.disputed}</strong></div>
-            <div className="rounded-lg bg-[#0d2b27] p-4"><span className="font-bold text-teal-100/60">Volume</span><strong className="block text-2xl text-white">{currency.format(passport.volume)}</strong></div>
+            <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+              <span className="font-bold text-slate-400">Created</span>
+              <strong className="block text-2xl text-white">{passport.created}</strong>
+            </div>
+            <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+              <span className="font-bold text-slate-400">Settled</span>
+              <strong className="block text-2xl text-white">{passport.settled}</strong>
+            </div>
+            <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+              <span className="font-bold text-slate-400">Disputes</span>
+              <strong className="block text-2xl text-white">{passport.disputed}</strong>
+            </div>
+            <div className="rounded-lg bg-slate-950/50 p-4 border border-white/5">
+              <span className="font-bold text-slate-400">Volume</span>
+              <strong className="block text-2xl text-white">{currency.format(passport.volume)}</strong>
+            </div>
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <form className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm" onSubmit={submitBid}>
+          <form className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm" onSubmit={submitBid}>
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-lg bg-teal-500/15 text-teal-100"><Gavel size={20} /></div>
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+                <Gavel size={20} className="text-teal-400" />
+              </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Financier marketplace</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Financier marketplace</p>
                 <h2 className="text-2xl font-black text-white">Submit bid</h2>
               </div>
             </div>
@@ -881,11 +1127,13 @@ function App() {
             </div>
           </form>
 
-          <form className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm" onSubmit={addDocument}>
+          <form className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm" onSubmit={addDocument}>
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-lg bg-teal-500/15 text-teal-100"><FileText size={20} /></div>
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+                <FileText size={20} className="text-teal-400" />
+              </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Document proofs</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Document proofs</p>
                 <h2 className="text-2xl font-black text-white">Upload and anchor</h2>
               </div>
             </div>
@@ -900,9 +1148,9 @@ function App() {
               <select className="field" value={docForm.kind} onChange={(e) => setDocForm((v) => ({ ...v, kind: e.target.value }))}>
                 {documentKindNames.map((name, index) => <option value={index} key={name}>{name}</option>)}
               </select>
-              <input className="field file:mr-3 file:rounded-md file:border-0 file:bg-teal file:px-3 file:py-1 file:text-sm file:font-black file:text-white" type="file" onChange={(e) => handleDocumentFile(e.target.files?.[0])} />
+              <input className="field file:mr-3 file:rounded-md file:border-0 file:bg-gradient-to-r file:from-teal-500 file:to-emerald-500 file:px-3 file:py-1 file:text-sm file:font-black file:text-white" type="file" onChange={(e) => handleDocumentFile(e.target.files?.[0])} />
               <input className="field" placeholder="Computed file hash or external hash" value={docForm.hashInput} onChange={(e) => setDocForm((v) => ({ ...v, hashInput: e.target.value }))} />
-              {docForm.fileName && <p className="text-sm font-bold text-teal-100/70">{docForm.fileName} · {docForm.ipfsCid}</p>}
+              {docForm.fileName && <p className="text-sm font-bold text-slate-400">{docForm.fileName} · {docForm.ipfsCid}</p>}
               <button className="btn-primary justify-center" disabled={txPending || !isV2}>Anchor document</button>
             </div>
           </form>
@@ -911,9 +1159,9 @@ function App() {
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-12 xl:grid-cols-[420px_minmax(0,1fr)]">
         <div className="grid gap-6">
-          <aside className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm">
+          <aside className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm">
             <h2 className="text-2xl font-black text-white">Create invoice</h2>
-            <p className="mt-3 text-sm leading-6 text-teal-100/70">
+            <p className="mt-3 text-sm leading-6 text-slate-400">
               Creates a real invoice on the deployed Arc proxy. The connected wallet becomes the importer.
             </p>
             <form className="mt-6 grid gap-4" onSubmit={createInvoice}>
@@ -926,7 +1174,7 @@ function App() {
                 ["advanceRate", "Advance rate %"],
                 ["dueDays", "Due days"]
               ].map(([name, label]) => (
-                <label className="grid gap-2 text-sm font-bold text-teal-100/70" key={name}>
+                <label className="grid gap-2 text-sm font-bold text-slate-400" key={name}>
                   {label}
                   <input
                     className="field"
@@ -943,18 +1191,18 @@ function App() {
             </form>
           </aside>
 
-          <aside className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">System status</p>
+          <aside className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">System status</p>
             <h2 className="mt-1 text-2xl font-black text-white">Wallet and revenue</h2>
-            <div className="mt-5 rounded-lg border border-teal-800 bg-[#0d2b27] p-5">
+            <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/50 p-5">
               <div className="grid gap-3 text-sm">
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Status</span><span className="font-black text-white">{isConnected ? "Connected" : "Disconnected"}</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Wallet</span><span className="font-black text-white">{address ? shortAddress(address) : "None"}</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Chain</span><span className="font-black text-white">{chainId || "Not connected"}</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Proxy</span><span className="font-black text-white">{contractHealth.version ? `v${contractHealth.version}` : "Ready"}</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Protocol fee</span><span className="font-black text-white">{contractHealth.protocolFeeBps / 100}%</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Fees earned</span><span className="font-black text-white">{currency.format(contractHealth.protocolFeesAccrued)}</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="font-bold text-teal-100/60">Fee wallet</span><span className="font-black text-white">{shortAddress(contractHealth.feeRecipient)}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Status</span><span className="font-black text-white">{isConnected ? "Connected" : "Disconnected"}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Wallet</span><span className="font-black text-white">{address ? shortAddress(address) : "None"}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Chain</span><span className="font-black text-white">{chainId || "Not connected"}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Proxy</span><span className="font-black text-white">{contractHealth.version ? `v${contractHealth.version}` : "Ready"}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Protocol fee</span><span className="font-black text-white">{contractHealth.protocolFeeBps / 100}%</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Fees earned</span><span className="font-black text-white">{currency.format(contractHealth.protocolFeesAccrued)}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-400">Fee wallet</span><span className="font-black text-white">{shortAddress(contractHealth.feeRecipient)}</span></div>
               </div>
             </div>
           </aside>
@@ -963,7 +1211,7 @@ function App() {
         <section>
           <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Role workspace</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Role workspace</p>
               <h2 className="text-3xl font-black text-white">Invoices</h2>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -977,14 +1225,14 @@ function App() {
           </div>
           {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
           {loading ? (
-            <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-8 text-teal-100/70">Loading Arc testnet invoices...</div>
+            <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-8 text-slate-400">Loading Arc testnet invoices...</div>
           ) : (
             <div className="grid gap-4">
               {roleInvoices.map((invoice) => (
                 <InvoiceCard key={invoice.id} invoice={invoice} onAction={act} txPending={txPending} walletAddress={address} />
               ))}
               {roleInvoices.length === 0 && (
-                <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-8 text-teal-100/70">
+                <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-8 text-slate-400">
                   No invoices in this role view. Create a trade flow or switch roles.
                 </div>
               )}
@@ -997,16 +1245,16 @@ function App() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-12">
-        <div className="rounded-lg border border-teal-800/70 bg-[#09201d] p-6 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-100">Audit trail</p>
+        <div className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-400">Audit trail</p>
           <h2 className="mt-1 text-2xl font-black text-white">Recent Arc events</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {events.slice(0, 6).map((event) => (
-              <div className="rounded-lg border border-teal-900 bg-[#0d2b27] p-4" key={`${event.time}-${event.title}`}>
+              <div className="rounded-lg border border-white/5 bg-slate-950/50 p-4" key={`${event.time}-${event.title}`}>
                 <p className="font-black text-white">{event.title}</p>
-                <p className="mt-2 text-sm leading-6 text-teal-100/60">{event.detail}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{event.detail}</p>
                 {event.hash && (
-                  <a className="mt-3 inline-flex text-sm font-black text-teal-100" href={txUrl(event.hash)} target="_blank" rel="noreferrer">
+                  <a className="mt-3 inline-flex text-sm font-black text-teal-400 hover:text-teal-300 transition-colors" href={txUrl(event.hash)} target="_blank" rel="noreferrer">
                     View transaction
                   </a>
                 )}
