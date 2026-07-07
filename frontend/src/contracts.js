@@ -5,7 +5,7 @@ export const arcTestnet = {
   nativeCurrency: {
     name: "USDC",
     symbol: "USDC",
-    decimals: 6
+    decimals: 18
   }
 };
 
@@ -19,6 +19,72 @@ export const deployedContracts = {
   usdc: import.meta.env.VITE_USDC_ADDRESS || "0x3600000000000000000000000000000000000000",
   owner: import.meta.env.VITE_OWNER || "0xB3aae9496a6670d13e1b80B1Fb3ad445c635aC23"
 };
+
+export const circleGateway = {
+  apiBaseUrl: import.meta.env.VITE_GATEWAY_API_BASE_URL || "https://gateway-api-testnet.circle.com/v1",
+  wallet: import.meta.env.VITE_GATEWAY_WALLET_ADDRESS || "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
+  minter: import.meta.env.VITE_GATEWAY_MINTER_ADDRESS || "0x0022222ABE238Cc2C7Bb1f21003F0a260052475B"
+};
+
+export const gatewayChains = [
+  {
+    key: "arc",
+    name: "Arc Testnet",
+    kitName: "Arc_Testnet",
+    domain: 26,
+    chainId: 5042002,
+    rpcUrl: "https://rpc.testnet.arc.network",
+    usdc: "0x3600000000000000000000000000000000000000",
+    explorer: "https://testnet.arcscan.app",
+    role: "Settlement chain"
+  },
+  {
+    key: "base",
+    name: "Base Sepolia",
+    kitName: "Base_Sepolia",
+    domain: 6,
+    chainId: 84532,
+    rpcUrl: "https://sepolia.base.org",
+    usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    explorer: "https://sepolia.basescan.org",
+    role: "Importer liquidity"
+  },
+  {
+    key: "ethereum",
+    name: "Ethereum Sepolia",
+    kitName: "Ethereum_Sepolia",
+    domain: 0,
+    chainId: 11155111,
+    rpcUrl: "https://rpc.sepolia.org",
+    usdc: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    explorer: "https://sepolia.etherscan.io",
+    role: "Treasury source"
+  },
+  {
+    key: "arbitrum",
+    name: "Arbitrum Sepolia",
+    kitName: "Arbitrum_Sepolia",
+    domain: 3,
+    chainId: 421614,
+    rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc",
+    usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+    explorer: "https://sepolia.arbiscan.io",
+    role: "Financier liquidity"
+  }
+];
+
+export const gatewayWalletAbi = [
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "value", type: "uint256" }
+    ],
+    outputs: []
+  }
+];
 
 export const tradeEscrowAbi = [
   {
@@ -206,6 +272,13 @@ export const tradeEscrowAbi = [
         ]
       }
     ]
+  },
+  {
+    type: "function",
+    name: "acceptedFinanceFeeBps",
+    stateMutability: "view",
+    inputs: [{ name: "invoiceId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }]
   },
   {
     type: "function",

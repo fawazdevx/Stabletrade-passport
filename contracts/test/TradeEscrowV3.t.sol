@@ -15,6 +15,7 @@ contract TradeEscrowV3Test is Test {
     address private owner = address(0xA11CE);
     address private importer = address(0xB0B);
     address private exporter = address(0xCAFE);
+    address private financier = address(0xF1);
     address private feeRecipient = address(0xFEE);
 
     function setUp() public {
@@ -57,5 +58,44 @@ contract TradeEscrowV3Test is Test {
         assertEq(usdc.balanceOf(feeRecipient), expectedFee);
         assertEq(usdc.balanceOf(exporter), amount - expectedFee);
         assertEq(escrow.protocolFeesAccrued(), expectedFee);
+    }
+
+    function testFinancierFeeAndProtocolFeeWaterfall() public {
+        uint256 amount = 10_000e6;
+        uint256 bidAmount = 8_000e6;
+        uint256 financierFeeBps = 250;
+        uint256 financeFee = (bidAmount * financierFeeBps) / 10_000;
+        uint256 financierRepayment = bidAmount + financeFee;
+        uint256 grossExporterPayout = amount - financierRepayment;
+        uint256 expectedProtocolFee = (grossExporterPayout * 100) / 10_000;
+
+        usdc.mint(importer, amount);
+        usdc.mint(financier, bidAmount);
+
+        vm.prank(importer);
+        uint256 invoiceId = escrow.createInvoice(exporter, amount, 0, keccak256("metadata"));
+
+        vm.prank(importer);
+        usdc.approve(address(escrow), amount);
+
+        vm.prank(importer);
+        escrow.fundEscrow(invoiceId);
+
+        vm.prank(financier);
+        uint256 bidIndex = escrow.submitFinanceBid(invoiceId, bidAmount, financierFeeBps);
+
+        vm.prank(financier);
+        usdc.approve(address(escrow), bidAmount);
+
+        vm.prank(exporter);
+        escrow.acceptFinanceBid(invoiceId, bidIndex);
+
+        vm.prank(importer);
+        escrow.releaseOnDelivery(invoiceId);
+
+        assertEq(usdc.balanceOf(financier), financierRepayment);
+        assertEq(usdc.balanceOf(feeRecipient), expectedProtocolFee);
+        assertEq(usdc.balanceOf(exporter), bidAmount + grossExporterPayout - expectedProtocolFee);
+        assertEq(escrow.protocolFeesAccrued(), expectedProtocolFee);
     }
 }

@@ -33,7 +33,9 @@ contract TradeEscrowUpgradeableV3 is TradeEscrowUpgradeableV2 {
         address financier = invoice.financier;
 
         invoice.status = Status.Settled;
-        uint256 financierRepayment = financier == address(0) ? 0 : invoice.advanceAmount;
+        uint256 financeFee = financier == address(0) ? 0 : (invoice.advanceAmount * acceptedFinanceFeeBps(invoiceId)) / 10_000;
+        uint256 financierRepayment = financier == address(0) ? 0 : invoice.advanceAmount + financeFee;
+        require(financierRepayment <= invoice.amount, "repayment exceeds escrow");
         uint256 grossExporterPayout = invoice.amount - financierRepayment;
         uint256 feeAmount = feeRecipient == address(0) ? 0 : (grossExporterPayout * protocolFeeBps) / 10_000;
         uint256 exporterPayout = grossExporterPayout - feeAmount;

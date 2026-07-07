@@ -36,6 +36,7 @@ contract TradeEscrowV2Test is Test {
     function testFinancierBiddingMarketplace() public {
         uint256 amount = 10_000e6;
         uint256 bidAmount = 8_500e6;
+        uint256 feeBps = 250;
 
         usdc.mint(importer, amount);
         usdc.mint(financier, bidAmount);
@@ -50,7 +51,7 @@ contract TradeEscrowV2Test is Test {
         escrow.fundEscrow(invoiceId);
 
         vm.prank(financier);
-        uint256 bidIndex = escrow.submitFinanceBid(invoiceId, bidAmount, 250);
+        uint256 bidIndex = escrow.submitFinanceBid(invoiceId, bidAmount, feeBps);
 
         vm.prank(financier);
         usdc.approve(address(escrow), bidAmount);
@@ -61,6 +62,41 @@ contract TradeEscrowV2Test is Test {
         assertEq(usdc.balanceOf(exporter), bidAmount);
         assertEq(escrow.financeBidCount(invoiceId), 1);
         assertEq(escrow.acceptedBidIndexPlusOne(invoiceId), bidIndex + 1);
+        assertEq(escrow.acceptedFinanceFeeBps(invoiceId), feeBps);
+    }
+
+    function testFinancierEarnsFeeOnSettlement() public {
+        uint256 amount = 10_000e6;
+        uint256 bidAmount = 8_000e6;
+        uint256 feeBps = 250;
+        uint256 financeFee = (bidAmount * feeBps) / 10_000;
+
+        usdc.mint(importer, amount);
+        usdc.mint(financier, bidAmount);
+
+        vm.prank(importer);
+        uint256 invoiceId = escrow.createInvoice(exporter, amount, 0, keccak256("invoice"));
+
+        vm.prank(importer);
+        usdc.approve(address(escrow), amount);
+
+        vm.prank(importer);
+        escrow.fundEscrow(invoiceId);
+
+        vm.prank(financier);
+        uint256 bidIndex = escrow.submitFinanceBid(invoiceId, bidAmount, feeBps);
+
+        vm.prank(financier);
+        usdc.approve(address(escrow), bidAmount);
+
+        vm.prank(exporter);
+        escrow.acceptFinanceBid(invoiceId, bidIndex);
+
+        vm.prank(importer);
+        escrow.releaseOnDelivery(invoiceId);
+
+        assertEq(usdc.balanceOf(financier), bidAmount + financeFee);
+        assertEq(usdc.balanceOf(exporter), bidAmount + amount - bidAmount - financeFee);
     }
 
     function testDocumentHashesAndPassport() public {

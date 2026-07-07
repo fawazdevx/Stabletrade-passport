@@ -24,15 +24,27 @@
   Importer[UAE Importer] --> Frontend[StableTrade Passport Web App]
   Exporter[Global Exporter] --> Frontend
   Financier[SME Financier] --> Frontend
-  Frontend --> API[Node Demo API]
+  Frontend --> Wallet[RainbowKit / wagmi Wallet]
+  Frontend --> API[Node API]
   API --> Wallets[Circle Wallets: embedded importer, exporter, financier wallets]
-  API --> Gateway[Circle Gateway: treasury movement and payout routing]
-  API --> Bridge[CCTP + Bridge Kit: cross-chain USDC when funds originate elsewhere]
+  API --> GatewayAPI[Circle Gateway API: unified balance]
+  Frontend --> Gateway[Circle Gateway Wallet: deposit Arc USDC]
+  Frontend --> Bridge[Circle App Kit / CCTP: approve, burn, attestation, mint]
+  Frontend --> Risk[Risk Marketplace: score, advance limit, fee bps, APR]
+  Frontend --> Agent[Agent Assistant: next best action, prepare-only automation]
+  Frontend --> Demo[Demo Operator Script: judging walkthrough]
   Wallets --> Arc[Arc Testnet]
+  Wallet --> Arc
   Gateway --> Arc
   Bridge --> Arc
   Arc --> Contract[TradeEscrow.sol: invoice escrow, advance, delivery release]
+  Contract --> Waterfall[Settlement Waterfall: financier principal + fee, protocol fee, exporter payout]
   Contract --> Passport[SME Credit Passport: repayment and settlement history]
+  Contract --> Risk
+  Waterfall --> Passport
+  Risk --> Agent
+  Agent --> Frontend
+  Passport --> Export[Passport JSON + QR verifier]
   Passport --> Financier</pre>
     </main>
   </body>

@@ -18,5 +18,12 @@ backend/node_modules/
 # Docs
 docs/
 
-# Dotenv file
-frontend/.env.example
+# Dotenv files
+.env*
+frontend/.env
+frontend/.env.*
+contracts/.env
+contracts/.env.*
+!.env.example
+!frontend/.env.example
+!contracts/.env.example

@@ -120,17 +120,42 @@ contract TradeEscrowUpgradeableV2 is TradeEscrowUpgradeable {
 
     function releaseOnDelivery(uint256 invoiceId) external virtual override whenNotPaused {
         Invoice storage invoice = invoices[invoiceId];
+        require(msg.sender == invoice.importer, "only importer");
+        require(invoice.status == Status.Escrowed || invoice.status == Status.Advanced, "not releasable");
+
         address importer = invoice.importer;
         address exporter = invoice.exporter;
         address financier = invoice.financier;
+        uint256 amount = invoice.amount;
+        uint256 financierRepayment = 0;
+        uint256 financeFee = 0;
+        if (financier != address(0)) {
+            financeFee = (invoice.advanceAmount * acceptedFinanceFeeBps(invoiceId)) / 10_000;
+            financierRepayment = invoice.advanceAmount + financeFee;
+            require(financierRepayment <= amount, "repayment exceeds escrow");
+        }
+        uint256 exporterPayout = amount - financierRepayment;
 
-        _releaseOnDelivery(invoiceId);
+        invoice.status = Status.Settled;
+
+        if (financierRepayment > 0) {
+            require(usdc.transfer(financier, financierRepayment), "repay failed");
+        }
+        require(usdc.transfer(exporter, exporterPayout), "payout failed");
+
+        settledVolume[importer] += amount;
+        settledVolume[exporter] += amount;
+        if (financier != address(0)) {
+            settledVolume[financier] += financierRepayment;
+        }
 
         settledInvoiceCount[importer] += 1;
         settledInvoiceCount[exporter] += 1;
         if (financier != address(0)) {
             settledInvoiceCount[financier] += 1;
         }
+
+        emit InvoiceSettled(invoiceId, exporterPayout, financierRepayment);
     }
 
     function dispute(uint256 invoiceId) external virtual override whenNotPaused {
@@ -150,6 +175,14 @@ contract TradeEscrowUpgradeableV2 is TradeEscrowUpgradeable {
 
     function financeBid(uint256 invoiceId, uint256 bidIndex) external view returns (FinanceBid memory) {
         return financeBids[invoiceId][bidIndex];
+    }
+
+    function acceptedFinanceFeeBps(uint256 invoiceId) public view returns (uint256) {
+        uint256 bidIndexPlusOne = acceptedBidIndexPlusOne[invoiceId];
+        if (bidIndexPlusOne == 0) {
+            return 0;
+        }
+        return financeBids[invoiceId][bidIndexPlusOne - 1].feeBps;
     }
 
     function tradeDocumentCount(uint256 invoiceId) external view returns (uint256) {

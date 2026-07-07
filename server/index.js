@@ -7,6 +7,17 @@ const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || "127.0.0.1";
 const ROOT = path.join(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
+const GATEWAY_API_BASE_URL = process.env.GATEWAY_API_BASE_URL || "https://gateway-api-testnet.circle.com/v1";
+
+// Illustrative sample balances returned only when the live Gateway API is
+// unreachable. The frontend labels these "Sample balances" — never as live.
+// Kept as round figures so they don't imitate real precise balances.
+const gatewayDemoBalances = [
+  { domain: 26, name: "Arc Testnet", balance: "15000.000000" },
+  { domain: 6, name: "Base Sepolia", balance: "8000.000000" },
+  { domain: 0, name: "Ethereum Sepolia", balance: "5000.000000" },
+  { domain: 3, name: "Arbitrum Sepolia", balance: "4000.000000" }
+];
 
 const state = {
   invoices: [
@@ -52,6 +63,75 @@ const state = {
       detail: "Arc testnet-style USDC settlement workflow is ready."
     }
   ]
+};
+
+const seededDemoInvoice = {
+  id: "DEMO-UAE-NG-001",
+  buyer: "Dubai Equipment Mart",
+  seller: "Lagos Parts Cooperative",
+  corridor: "UAE -> Nigeria",
+  amount: 24800,
+  advanceRate: 0.82,
+  dueDays: 21,
+  status: "advanced",
+  walletStatus: "Circle Wallet ready",
+  riskScore: 91,
+  source: "demo",
+  metadataHash: "0x9b5a5f3a7863b2df8ed493ed52c0f24a1a2fe3da58f2c3ad88cf71d4be2417f0",
+  importerAddress: "0xB3aae9496a6670d13e1b80B1Fb3ad445c635aC23",
+  sellerAddress: "0x6F4c2C98fD7b3FfE14F3Ddb0e782cE3f4c0d4581",
+  financierAddress: "0x2B4B7361c65e9234f9cE9b73bDBE3E7464C5A621",
+  financeFeeBps: 220,
+  documents: [
+    {
+      kind: 0,
+      hash: "0x5ee717721fd6b57e9e75c00a276f817d09302b865f9db94f28f019b8ba94760d",
+      uploader: "0xB3aae9496a6670d13e1b80B1Fb3ad445c635aC23"
+    },
+    {
+      kind: 1,
+      hash: "0xa7ad46bc1dd212d5690c60d16ef2eb31f96a2e1edbc47f120ba6f7c59b2aa950",
+      uploader: "0x6F4c2C98fD7b3FfE14F3Ddb0e782cE3f4c0d4581"
+    },
+    {
+      kind: 2,
+      hash: "0xe0526f65f2034dbfa13a9a30b98dd8e08ca1a65a0c56c67061e63f8b0a4df035",
+      uploader: "0x6F4c2C98fD7b3FfE14F3Ddb0e782cE3f4c0d4581"
+    }
+  ],
+  bids: [
+    {
+      index: 0,
+      financier: "0x2B4B7361c65e9234f9cE9b73bDBE3E7464C5A621",
+      advanceAmount: 20336,
+      feeBps: 220,
+      accepted: true,
+      cancelled: false
+    },
+    {
+      index: 1,
+      financier: "0x5214bb08f6e79A8922f95c5f215F59d7945F12a7",
+      advanceAmount: 19840,
+      feeBps: 280,
+      accepted: false,
+      cancelled: false
+    }
+  ],
+  history: [
+    "Gateway route staged from Base Sepolia to Arc",
+    "CCTP funding receipt generated",
+    "Purchase order, invoice, and delivery proof anchored",
+    "Financier bid accepted: 20,336 USDC advance at 2.2% fee"
+  ],
+  settlementWaterfall: {
+    importerEscrow: 24800,
+    exporterAdvance: 20336,
+    financierFee: 447.39,
+    financierRepayment: 20783.39,
+    protocolFee: 20.08,
+    exporterFinalPayout: 3996.53,
+    exporterTotalReceived: 24332.53
+  }
 };
 
 const mime = {
@@ -131,6 +211,88 @@ async function route(req, res) {
 
   if (url.pathname === "/api/invoices" && req.method === "GET") {
     sendJson(res, 200, { invoices: state.invoices, events: state.events });
+    return;
+  }
+
+  if (url.pathname === "/api/demo/seed" && req.method === "POST") {
+    const existingIndex = state.invoices.findIndex((invoice) => invoice.id === seededDemoInvoice.id);
+    if (existingIndex >= 0) {
+      state.invoices[existingIndex] = { ...seededDemoInvoice };
+    } else {
+      state.invoices.unshift({ ...seededDemoInvoice });
+    }
+    addEvent("Winning demo scenario seeded", "UAE importer, Lagos exporter, accepted financier bid, Gateway route, CCTP receipt, and delivery proofs are ready.");
+    addEvent("Settlement waterfall ready", "Financier repayment includes principal plus fee before exporter final payout.");
+    sendJson(res, 200, { invoice: seededDemoInvoice, events: state.events });
+    return;
+  }
+
+  if (url.pathname === "/api/gateway/balances" && req.method === "POST") {
+    const body = await readBody(req);
+    const sources = Array.isArray(body.sources) ? body.sources : [];
+
+    if (sources.length === 0) {
+      sendJson(res, 400, { error: "sources are required" });
+      return;
+    }
+
+    try {
+      const gatewayRes = await fetch(`${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/balances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: "USDC", sources })
+      });
+      const gatewayBody = await gatewayRes.json().catch(() => ({}));
+      if (!gatewayRes.ok) {
+        throw new Error(gatewayBody.error || `Gateway balance request failed: ${gatewayRes.status}`);
+      }
+      sendJson(res, 200, { ...gatewayBody, source: "circle-gateway" });
+    } catch (error) {
+      sendJson(res, 200, {
+        token: "USDC",
+        source: "demo-fallback",
+        warning: error.message,
+        balances: sources.map((source, index) => {
+          const match = gatewayDemoBalances.find((item) => item.domain === Number(source.domain));
+          return {
+            domain: Number(source.domain),
+            depositor: source.depositor,
+            balance: match ? match.balance : (2500 + index * 750).toFixed(6)
+          };
+        })
+      });
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/cctp/demo-receipt" && req.method === "POST") {
+    const body = await readBody(req);
+    const amount = Number(body.amount || 0);
+    if (!body.sourceChain || !body.destinationChain || !amount) {
+      sendJson(res, 400, { error: "sourceChain, destinationChain, and amount are required" });
+      return;
+    }
+
+    const receipt = {
+      id: `CCTP-${Date.now().toString(36).toUpperCase()}`,
+      provider: "Circle App Kit / CCTP v2",
+      state: "demo-ready",
+      amount: amount.toFixed(2),
+      token: "USDC",
+      sourceChain: body.sourceChain,
+      destinationChain: body.destinationChain,
+      recipient: body.recipient || "connected wallet",
+      forwardingService: Boolean(body.forwardingService),
+      steps: [
+        { name: "approve", state: "ready", hash: txHash("cctp:approve") },
+        { name: "burn", state: "ready", hash: txHash("cctp:burn") },
+        { name: "fetchAttestation", state: "ready", attestation: txHash("cctp:attestation") },
+        { name: "mint", state: "ready", hash: txHash("cctp:mint") }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    addEvent("CCTP route prepared", `${receipt.amount} USDC from ${receipt.sourceChain} to ${receipt.destinationChain}.`);
+    sendJson(res, 200, { receipt });
     return;
   }
 
