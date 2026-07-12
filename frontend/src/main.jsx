@@ -31,10 +31,10 @@ import {
 } from "lucide-react";
 import { arcTestnet, circleGateway, deployedContracts, gatewayChains, gatewayWalletAbi, tradeEscrowAbi, usdcAbi } from "./contracts";
 import { arcChain, wagmiConfig } from "./wallet";
-import { AppStateContext, personas, personaByKey } from "./appState";
+import { AppStateContext, personaByKey } from "./appState";
 import { usdcWithAed, aedEquivalent, usdCents, bpsToPct } from "./format";
-import PersonaBar from "./layout/PersonaBar";
-import CircleTelemetryDrawer from "./layout/CircleTelemetryDrawer";
+import Sidebar from "./layout/Sidebar";
+import TopBar from "./layout/TopBar";
 import SettlementWaterfall from "./components/SettlementWaterfall";
 import StateMachine from "./components/StateMachine";
 import CctpProgress from "./components/CctpProgress";
@@ -233,11 +233,15 @@ function toUsdcDisplay(value) {
 }
 
 function txUrl(hash) {
-  return `https://explorer.testnet.arc.network/tx/${hash}`;
+  return `https://testnet.arcscan.app/tx/${hash}`;
 }
 
 function sameAddress(a, b) {
   return Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+}
+
+function hasDeliveryProof(invoice) {
+  return (invoice.documents || []).some((doc) => Number(doc.kind) === 2);
 }
 
 function hasAddress(value) {
@@ -289,9 +293,10 @@ function makePassportQrData(payload) {
 function buildRiskProfile(invoice) {
   const documents = invoice.documents || [];
   const bids = invoice.bids || [];
+  const deliveryProof = hasDeliveryProof(invoice);
   const advanceRate = invoice.advanceRate || 0;
   const amount = invoice.amount || 0;
-  const docScore = Math.min(20, documents.length * 5);
+  const docScore = Math.min(20, documents.length * 5 + (deliveryProof ? 8 : 0));
   const sizePenalty = amount > 50000 ? 8 : amount > 20000 ? 4 : 0;
   const advancePenalty = advanceRate > 0.88 ? 15 : advanceRate > 0.82 ? 8 : advanceRate > 0.72 ? 3 : 0;
   const bidSignal = Math.min(8, bids.length * 2);
@@ -316,7 +321,7 @@ function buildRiskProfile(invoice) {
     coverage: Math.round(maxAdvanceRate * 100),
     checks: [
       { label: "Escrow funded", ok: ["escrowed", "advanced", "settled"].includes(invoice.status) },
-      { label: "Document proofs", ok: documents.length >= 2 },
+      { label: "Delivery proof anchored", ok: deliveryProof },
       { label: "Advance below limit", ok: advanceRate <= maxAdvanceRate },
       { label: "Marketplace signal", ok: bids.length > 0 || invoice.status === "escrowed" }
     ]
@@ -403,8 +408,10 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress, protocolFeeB
   const isExporter = sameAddress(walletAddress, invoice.sellerAddress);
   const canFund = onchain && invoice.status === "draft" && isImporter;
   const canAdvance = onchain && invoice.status === "escrowed" && !isExporter && invoice.advanceAmount > 0;
-  const canRelease = onchain && (invoice.status === "escrowed" || invoice.status === "advanced") && isImporter;
-  const role = isImporter ? "Importer" : isExporter ? "Exporter" : onchain ? "Financier / observer" : "Demo sample";
+  const deliveryProof = hasDeliveryProof(invoice);
+  const releaseReady = onchain && (invoice.status === "escrowed" || invoice.status === "advanced") && isImporter;
+  const canRelease = releaseReady && deliveryProof;
+  const role = isImporter ? "Importer" : isExporter ? "Exporter" : onchain ? "Financier / observer" : "Sample";
 
   return (
     <Spotlight as="article" className="rounded-xl border border-white/[0.08] bg-gradient-to-br from-slate-900/90 to-slate-800/90 p-6 shadow-xl backdrop-blur-sm transition-all hover:border-teal-500/30">
@@ -453,7 +460,8 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress, protocolFeeB
       </div>
 
       {(onchain || demoRich) && (
-        <div className="mt-6 grid gap-4 xl:grid-cols-3">
+        <div className="mt-6 grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-white/[0.08] bg-slate-950/50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-teal-400">Financier bids</p>
             <div className="mt-3 grid gap-3">
@@ -495,28 +503,40 @@ function InvoiceCard({ invoice, onAction, txPending, walletAddress, protocolFeeB
               ))}
             </div>
           </div>
+          </div>
 
           <SettlementWaterfall waterfall={waterfall} />
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button className="btn-secondary" disabled={txPending || !canFund} onClick={() => onAction(invoice, "fund-escrow")}>
-          <WalletCards size={16} />
-          Fund escrow
-        </button>
-        <button className="btn-secondary" disabled={txPending || !canAdvance} onClick={() => onAction(invoice, "approve-advance")}>
-          <Landmark size={16} />
-          Advance exporter
-        </button>
-        <button className="btn-primary" disabled={txPending || !canRelease} onClick={() => onAction(invoice, "release")}>
-          <FileCheck2 size={16} />
-          Release on delivery
-        </button>
-      </div>
-      {onchain && (
-        <p className="mt-3 text-xs font-bold text-slate-400">
-          Importer funds and releases escrow. Any financier wallet can advance an escrowed invoice.
+      {onchain ? (
+        <>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button className="btn-secondary" disabled={txPending || !canFund} onClick={() => onAction(invoice, "fund-escrow")}>
+              <WalletCards size={16} />
+              Fund escrow
+            </button>
+            <button className="btn-secondary" disabled={txPending || !canAdvance} onClick={() => onAction(invoice, "approve-advance")}>
+              <Landmark size={16} />
+              Advance exporter
+            </button>
+            <button className="btn-primary" disabled={txPending || !canRelease} onClick={() => onAction(invoice, "release")}>
+              <FileCheck2 size={16} />
+              Release on delivery
+            </button>
+          </div>
+          {releaseReady && !deliveryProof && (
+            <p className="mt-3 alert-warn">
+              Delivery proof is required onchain before this escrow can be released.
+            </p>
+          )}
+          <p className="mt-3 text-xs font-bold text-slate-400">
+            Importer funds escrow. Settlement release requires an anchored delivery proof.
+          </p>
+        </>
+      ) : (
+        <p className="mt-6 rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3 text-xs font-semibold text-slate-400">
+          Illustrative sample — create a live invoice on Arc to run funding, advance, and settlement actions.
         </p>
       )}
     </Spotlight>
@@ -547,6 +567,7 @@ function App() {
   });
   const [activeRole, setActiveRole] = useState("buyer");
   const [persona, setPersonaState] = useState("importer");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState("dashboard");
 
   // Persona bar drives the global role: switching persona re-points the onchain
@@ -580,21 +601,23 @@ function App() {
   });
   const [docForm, setDocForm] = useState({
     invoiceId: "",
-    kind: "1",
+    kind: "2",
     hashInput: "",
     fileName: "",
     ipfsCid: ""
   });
   const [gatewayBalances, setGatewayBalances] = useState([]);
   const [gatewayStatus, setGatewayStatus] = useState({
-    source: "demo",
+    source: "unqueried",
+    live: false,
     loading: false,
-    warning: ""
+    warning: "",
+    checkedAt: "",
+    gatewayApiBaseUrl: "",
+    depositor: ""
   });
   const [gatewayForm, setGatewayForm] = useState({
-    depositAmount: "25",
-    routeAmount: "2500",
-    routeInvoiceId: ""
+    depositAmount: "25"
   });
   const [bridgeForm, setBridgeForm] = useState({
     sourceKey: "base",
@@ -606,8 +629,6 @@ function App() {
   const [bridgeSteps, setBridgeSteps] = useState(bridgeStepNames.map((name) => ({ name, state: "waiting" })));
   const [bridgeReceipt, setBridgeReceipt] = useState(null);
   const [passportCopied, setPassportCopied] = useState(false);
-
-  const allInvoices = useMemo(() => [...onchainInvoices, ...invoices], [onchainInvoices, invoices]);
 
   // Headline KPIs reflect real onchain trades only — sample/demo invoices never
   // inflate them. Empty is shown as an honest zero state, not fabricated.
@@ -681,7 +702,6 @@ function App() {
     ["system", ShieldCheck, "System"]
   ];
   const activePageConfig = appPages.find(([page]) => page === activePage) || appPages[0];
-  const ActivePageIcon = activePageConfig[1];
   const activePageLabel = activePageConfig[2];
 
   const roleInvoices = useMemo(() => {
@@ -735,14 +755,22 @@ function App() {
       setGatewayBalances(data.balances || []);
       setGatewayStatus({
         source: data.source || "circle-gateway",
+        live: Boolean(data.live),
         loading: false,
-        warning: data.warning || ""
+        warning: data.warning || "",
+        checkedAt: data.checkedAt || new Date().toISOString(),
+        gatewayApiBaseUrl: data.gatewayApiBaseUrl || circleGateway.apiBaseUrl,
+        depositor
       });
     } catch (err) {
       setGatewayStatus({
         source: "unavailable",
+        live: false,
         loading: false,
-        warning: err.message
+        warning: err.message,
+        checkedAt: new Date().toISOString(),
+        gatewayApiBaseUrl: circleGateway.apiBaseUrl,
+        depositor: address || deployedContracts.owner
       });
     }
   }
@@ -796,7 +824,7 @@ function App() {
       const amount = Number(bridgeForm.amount || 0);
       if (!amount || amount <= 0) throw new Error("Enter a valid USDC amount.");
       if (amount > 100) {
-        throw new Error("This demo blocks bridge attempts above 100 USDC. Lower the amount for a testnet run.");
+        throw new Error("Testnet transfers are capped at 100 USDC. Lower the amount to continue.");
       }
 
       if (chainId !== selectedBridgeSource.chainId) {
@@ -861,7 +889,7 @@ function App() {
           state: "demo-ready",
           detail: step.hash || step.attestation
         })));
-        setError(`Live CCTP run did not complete: ${err.message}. Demo receipt generated for the presentation flow.`);
+        setError(`Live CCTP transfer did not complete: ${err.message}. A labelled demo receipt was generated below — it is not a real settlement.`);
       } catch {
         setError(err.message);
       }
@@ -881,7 +909,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `stabletrade-passport-${address || "demo"}.json`;
+    link.download = `stabletrade-passport-${address || "unconnected"}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -1141,7 +1169,8 @@ function App() {
       try {
         const data = await api("/api/invoices");
         setInvoices(data.invoices.map((invoice) => ({ ...invoice, source: "demo" })));
-        setEvents((current) => [...current, ...data.events]);
+        // Backend sample events are not merged into the Arc audit trail — that
+        // trail reflects real onchain transactions from this session only.
         setBackendStatus("available");
       } catch {
         setInvoices([]);
@@ -1605,94 +1634,25 @@ function App() {
 
   return (
     <AppStateContext.Provider value={appStateValue}>
-    <main className="app-shell min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      <CircleTelemetryDrawer />
-      <div className="sticky top-0 z-40">
-        <PersonaBar persona={persona} onChange={setPersona} />
-        <header className="relative border-b border-white/[0.06] bg-slate-950/80 backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent"></div>
-          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowLanding(true)}
-                className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 shadow-lg shadow-teal-500/30 transition-transform hover:scale-105"
-              >
-                <Shield size={22} className="text-white" />
-              </button>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-teal-400/80">StableTrade Passport</p>
-                <h1 className="text-xl font-bold tracking-tight text-white md:text-2xl">
-                  Trade Finance Console
-                </h1>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex h-8 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-300">
-                <span className="relative inline-flex h-2 w-2 text-emerald-400">
-                  <span className="live-dot absolute inline-flex h-2 w-2 rounded-full"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
-                </span>
-                Arc testnet
-              </span>
-              <span className="inline-flex h-8 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-300">
-                USDC Ready
-              </span>
-              <ConnectButton />
-            </div>
-          </div>
-        </header>
+    <div className="app-shell min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <Sidebar
+        appPages={appPages}
+        activePage={activePage}
+        setActivePage={setActivePage}
+        onHome={() => setShowLanding(true)}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-        <nav className="border-b border-white/[0.08] bg-slate-950/70 backdrop-blur-xl">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-            <div className="panel p-3 sm:p-4 lg:p-5">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-teal-400/25 bg-teal-400/10 text-teal-300">
-                    <ActivePageIcon size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="eyebrow">Workspace panel</p>
-                    <h2 className="truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">{activePageLabel}</h2>
-                    <p className="mt-1 hidden text-sm text-slate-400 sm:block">
-                      Switch between trade operations, treasury, funding, underwriting, assistant, passport, and system views.
-                    </p>
-                  </div>
-                </div>
+      <div className="lg:pl-60">
+        <TopBar
+          persona={persona}
+          onPersonaChange={setPersona}
+          activePageLabel={activePageLabel}
+          onMenu={() => setSidebarOpen(true)}
+        />
 
-                <label className="grid min-w-0 gap-2 text-sm font-semibold text-slate-400">
-                  <span className="sr-only">Choose StableTrade page</span>
-                  <select
-                    className="page-select"
-                    value={activePage}
-                    onChange={(event) => setActivePage(event.target.value)}
-                  >
-                    {appPages.map(([page, , label]) => (
-                      <option value={page} key={page}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="mt-4 hidden grid-cols-4 gap-2 lg:grid">
-                {appPages.map(([page, Icon, label]) => (
-                  <button
-                    key={page}
-                    className={activePage === page ? "nav-tab-active justify-start" : "nav-tab justify-start"}
-                    onClick={() => setActivePage(page)}
-                    title={label}
-                    type="button"
-                  >
-                    <Icon size={17} />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </nav>
-      </div>
-
-      <div key={activePage} className="page-enter">
+        <main key={activePage} className="page-enter">
       {activePage === "dashboard" && (
       <>
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
@@ -1748,10 +1708,21 @@ function App() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 sm:pb-10">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="eyebrow">Live metrics</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Read live from the Arc proxy</h2>
+          </div>
+          {onchainInvoices.length === 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300">
+              No trades on this contract yet — create one in Trades
+            </span>
+          )}
+        </div>
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <Metric icon={Banknote} label="Escrowed volume" value={currency.format(metrics.activeVolume)} detail={`${aedEquivalent(metrics.activeVolume)} · importer-funded USDC in active workflows.`} />
-          <Metric icon={ArrowRightLeft} label="Average advance" value={`${Math.round(metrics.avgAdvance * 100)}%`} detail="Expected financier advance against verified receivables." />
-          <Metric icon={BadgeCheck} label="Settled invoices" value={String(metrics.settled)} detail="Released by proof-of-delivery style trigger." />
+          <Metric icon={ArrowRightLeft} label="Average advance" value={metrics.avgAdvance ? `${Math.round(metrics.avgAdvance * 100)}%` : "—"} detail="Average financier advance against funded receivables." />
+          <Metric icon={BadgeCheck} label="Settled invoices" value={String(metrics.settled)} detail="Released by the proof-of-delivery trigger." />
           <Metric icon={CircleDollarSign} label="Wallet USDC" value={usdcBalance === null ? "Connect wallet" : currency.format(usdcBalance)} detail="Live balance read from Arc testnet USDC." />
         </div>
       </section>
@@ -1771,7 +1742,11 @@ function App() {
                 )}
               </div>
             ))}
-            {events.length === 0 && <p className="text-sm text-slate-400">No local transaction events yet.</p>}
+            {events.length === 0 && (
+              <p className="text-sm text-slate-400">
+                No transactions yet this session. Fund an escrow, advance a receivable, or release on delivery — each confirmed Arc transaction appears here with an explorer link.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -1892,25 +1867,43 @@ function App() {
                   then route capital into Arc settlement when an invoice needs funding.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Pill tone={gatewayStatus.source === "circle-gateway" ? "good" : "warn"}>
-                  {gatewayStatus.source === "circle-gateway" ? "Live Gateway API" : "Sample balances"}
-                </Pill>
-                <button className="btn-secondary" onClick={loadGatewayBalances} disabled={gatewayStatus.loading} type="button">
-                  <RefreshCw size={16} />
+	              <div className="flex flex-wrap gap-2">
+	                <Pill tone={gatewayStatus.live ? "good" : "warn"}>
+	                  {gatewayStatus.live ? "Live Gateway API" : gatewayStatus.source === "sample-fallback" ? "Sample balances" : "Gateway offline"}
+	                </Pill>
+	                <button className="btn-secondary" onClick={loadGatewayBalances} disabled={gatewayStatus.loading} type="button">
+	                  <RefreshCw size={16} />
                   Refresh
                 </button>
               </div>
             </div>
-            {gatewayStatus.warning && (
-              <p className="mt-5 alert-warn">
-                Gateway API fallback: {gatewayStatus.warning}
-              </p>
-            )}
-            <div className="mt-7 grid gap-4 md:grid-cols-4">
+	            {gatewayStatus.warning && (
+	              <p className="mt-5 alert-warn">
+	                Gateway status: {gatewayStatus.warning}
+	              </p>
+	            )}
+	            {gatewayStatus.checkedAt && (
+	              <div className="mt-5 grid gap-3 rounded-xl border border-white/5 bg-slate-950/50 p-4 text-xs text-slate-400 md:grid-cols-3">
+	                <div>
+	                  <span className="block font-bold uppercase tracking-wide text-slate-500">Checked at</span>
+	                  <span className="mt-1 block font-mono text-teal-300">{new Date(gatewayStatus.checkedAt).toLocaleString()}</span>
+	                </div>
+	                <div>
+	                  <span className="block font-bold uppercase tracking-wide text-slate-500">Gateway source</span>
+	                  <span className={gatewayStatus.live ? "mt-1 block font-mono text-emerald-300" : "mt-1 block font-mono text-amber-300"}>
+	                    {gatewayStatus.source}
+	                  </span>
+	                </div>
+	                <div>
+	                  <span className="block font-bold uppercase tracking-wide text-slate-500">Depositor</span>
+	                  <span className="mt-1 block break-all font-mono text-teal-300">{gatewayStatus.depositor}</span>
+	                </div>
+	              </div>
+	            )}
+	            <div className="mt-7 grid gap-4 sm:grid-cols-2">
               <Metric icon={CircleDollarSign} label="Unified balance" value={currency.format(gatewaySummary.total)} detail="Total USDC visible across configured Gateway domains." />
               <Metric icon={Network} label="Arc inventory" value={currency.format(gatewaySummary.arc)} detail="Liquidity already positioned on Arc testnet." />
-              <Metric icon={ArrowRightLeft} label="External source" value={currency.format(gatewaySummary.external)} detail="USDC available outside Arc for routing." />
+              <Metric icon={ArrowRightLeft} label="Outside Arc" value={currency.format(gatewaySummary.external)} detail="USDC on other chains, fundable into Arc via CCTP." />
               <Metric icon={FileText} label="Open need" value={currency.format(gatewaySummary.openNeeds)} detail="Draft and escrowed invoice settlement demand." />
             </div>
           </div>
@@ -1999,7 +1992,7 @@ function App() {
           <h2 className="mt-1 text-3xl font-semibold tracking-tight text-white">Fund Arc from another chain</h2>
           <p className="mt-4 text-sm leading-6 text-slate-400">
             Uses Circle App Kit with the viem provider adapter when a wallet is connected. If the live testnet transfer cannot complete,
-            the backend returns a demo receipt with the same approve, burn, attestation, and mint stages for the video walkthrough.
+            a labelled local receipt is available only when the backend enables gated presentation fallbacks.
           </p>
           <div className="mt-6 grid gap-4">
             <label className="grid gap-2 text-sm font-bold text-slate-400">
@@ -2072,11 +2065,18 @@ function App() {
 
           {bridgeReceipt && (
             <div className="panel p-7 md:p-8">
-              <p className="eyebrow">Funding receipt</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">{bridgeReceipt.id}</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="eyebrow">Funding receipt</p>
+                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">{bridgeReceipt.id}</h2>
+                </div>
+                {bridgeReceipt.liveError
+                  ? <Pill tone="warn">Demo receipt — live transfer unavailable</Pill>
+                  : <Pill tone="good">Live CCTP transfer</Pill>}
+              </div>
               {bridgeReceipt.liveError && (
                 <p className="mt-4 alert-warn">
-                  Live SDK fallback: {bridgeReceipt.liveError}
+                  The live CCTP transfer did not complete ({bridgeReceipt.liveError}). This is a labelled demo receipt showing the same four stages — not a real settlement.
                 </p>
               )}
               <pre className="mt-5 max-h-[360px] overflow-auto rounded-xl border border-white/[0.08] bg-slate-950/70 p-5 text-xs leading-5 text-teal-100">
@@ -2117,7 +2117,7 @@ function App() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                <div className="mt-6 grid gap-3 grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-lg border border-white/5 bg-slate-900/70 p-4">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Invoice</p>
                     <p className="text-xl font-semibold text-white">{currency.format(invoice.amount)}</p>
@@ -2136,7 +2136,7 @@ function App() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-4">
+                <div className="mt-5 grid gap-3 grid-cols-2 xl:grid-cols-4">
                   {risk.checks.map((check) => (
                     <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-slate-900/60 p-3 text-sm font-bold text-slate-300" key={`${invoice.id}-${check.label}`}>
                       <span className={`h-2.5 w-2.5 rounded-full ${check.ok ? "bg-emerald-400" : "bg-amber-400"}`} />
@@ -2447,15 +2447,16 @@ function App() {
             <div className="mt-3 grid gap-1.5 font-mono text-[11px] leading-relaxed text-slate-400">
               <p><span className="text-emerald-400">✓</span> Proxy resolved · v{contractHealth.version || "—"} · paused={String(contractHealth.paused)}</p>
               <p><span className="text-emerald-400">✓</span> USDC settlement asset bound · {shortAddress(deployedContracts.usdc)}</p>
-              <p><span className="text-emerald-400">✓</span> Gateway route {gatewayStatus.source === "circle-gateway" ? "live" : "demo fallback"} · {gatewayRows.length} domains</p>
+	              <p><span className={gatewayStatus.live ? "text-emerald-400" : "text-amber-400"}>{gatewayStatus.live ? "✓" : "•"}</span> Gateway {gatewayStatus.live ? "live API" : gatewayStatus.source === "sample-fallback" ? "sample balances" : "offline"} · {gatewayRows.length} domains</p>
               <p><span className="text-teal-400">•</span> Protocol fee {contractHealth.protocolFeeBps / 100}% → {shortAddress(contractHealth.feeRecipient) || "unset"}</p>
             </div>
           </div>
         </div>
       </section>
       )}
+        </main>
       </div>
-    </main>
+    </div>
     </AppStateContext.Provider>
   );
 }

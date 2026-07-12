@@ -1,6 +1,6 @@
 # StableTrade Passport Frontend
 
-Modern React + Tailwind DApp interface for the StableTrade Passport demo.
+Modern React + Tailwind DApp interface for StableTrade Passport.
 
 ## Run
 
@@ -45,10 +45,10 @@ The app uses RainbowKit, wagmi, viem, and React Query.
 Add a WalletConnect project ID for production demos:
 
 ```bash
-VITE_WALLETCONNECT_PROJECT_ID=your_project_id
+VITE_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
 ```
 
-StableTrade is onchain-first. The backend is optional and only provides demo samples if it is running.
+StableTrade is onchain-first. The backend provides read-only sample invoices, the Gateway balance proxy, and gated local helpers when it is running.
 
 When a wallet is connected and an exporter wallet address is provided, invoice creation writes to the deployed `TradeEscrow` proxy on Arc testnet. Onchain invoices are loaded from the proxy by reading `nextInvoiceId()` and `invoices(id)`. The app also reads wallet USDC balance, proxy version, paused state, and next invoice ID directly from Arc.
 
@@ -59,11 +59,11 @@ Onchain actions:
 - `fundEscrow(invoiceId)`
 - `approve(TradeEscrowProxy, advanceAmount)` on USDC before financier advance
 - `payAdvance(invoiceId)`
-- `releaseOnDelivery(invoiceId)`
+- `addTradeDocument(invoiceId, DeliveryProof, documentHash)`
+- `releaseOnDelivery(invoiceId)` after delivery proof exists
 
 When a marketplace bid is accepted, the contract stores the accepted fee bps. Delivery settlement repays the financier principal plus that accepted fee first, then pays protocol fees and the exporter remainder. The invoice cards visualize the same waterfall so judges can see the trade-finance economics without reading contract code.
 
-If no wallet is connected, the app keeps using the backend demo flow so presentations still work without testnet funds.
 If no wallet is connected, users can inspect deployed contracts and any existing Arc invoices, but cannot create or settle invoices.
 
 ## Gateway Treasury
@@ -75,7 +75,9 @@ The Treasury tab shows Circle Gateway-style unified USDC balances across configu
 - Ethereum Sepolia: domain `0`
 - Arbitrum Sepolia: domain `3`
 
-The frontend calls `/api/gateway/balances`; the backend proxies Circle Gateway's testnet `/balances` endpoint and falls back to demo balances if the external API is unavailable. The Arc deposit action performs:
+The frontend calls `/api/gateway/balances`; the backend proxies Circle Gateway's testnet `/balances` endpoint. Public mode returns a `502` if the live Gateway request fails instead of showing sample balances. Local sample balances require `ENABLE_GATEWAY_SAMPLE_FALLBACK=true`.
+
+The Arc deposit action performs:
 
 1. `approve(GatewayWallet, amount)` on Arc USDC.
 2. `GatewayWallet.deposit(USDC, amount)`.
@@ -89,7 +91,7 @@ The CCTP Funding tab uses Circle App Kit and `@circle-fin/adapter-viem-v2` with 
 3. Fetch attestation
 4. Mint
 
-The live transfer path is limited to `<= 100 USDC` in the demo UI. If a wallet, source liquidity, or testnet route prevents completion, the backend returns a labeled demo receipt so the presentation flow remains deterministic.
+The live transfer path is limited to `<= 100 USDC` in the UI. If a wallet, source liquidity, or testnet route prevents completion, a labeled local receipt can be generated only when the backend has `ENABLE_DEMO_FALLBACKS=true` or a valid `ADMIN_TOKEN`.
 
 ## Risk-Based Marketplace
 
@@ -114,19 +116,17 @@ The Assistant tab watches invoice state, Gateway liquidity, CCTP readiness, and 
 
 The assistant is intentionally prepare-only. Wallet signing, token approval, bid submission, bridge transfer, and settlement release remain manual user actions.
 
-## Demo Operator Script
+## Judge Walkthrough
 
-The Demo tab provides the recommended judging walkthrough:
+Use these pages for the recording:
 
-0. Seed the UAE to Nigeria demo scenario.
-1. Create a trade invoice.
-2. Show Gateway treasury routing.
-3. Run or generate CCTP funding receipt.
-4. Underwrite the receivable.
-5. Apply an assistant recommendation.
-6. Export the credit passport.
-
-The seed button inserts a ready-made invoice with a 20,336 USDC advance, 2.2% financier fee, accepted bid, three document hashes, Gateway route note, CCTP receipt note, and settlement waterfall.
+1. **System**: confirm Arc chain ID, proxy, version, pause state, fee settings, and wallet status.
+2. **Trades**: create an invoice, fund escrow, accept financing, anchor delivery proof, and release settlement.
+3. **Treasury**: show the live Gateway API status and, if funded, Arc Gateway inventory.
+4. **CCTP Funding**: run the live route or show the gated receipt as a clearly labeled fallback.
+5. **Marketplace**: underwrite the receivable, show suggested advance and fee bps, then submit or prefill a bid.
+6. **Assistant**: apply a prepare-only recommendation.
+7. **Passport**: export the credit passport JSON and QR verifier.
 
 ## Document Uploads
 
@@ -139,7 +139,7 @@ PINATA_JWT=your_pinata_jwt
 PINATA_GATEWAY=https://your-gateway.mypinata.cloud
 ```
 
-If Pinata is not configured, the DApp still anchors the local file hash so the demo remains functional.
+Public mode disables backend uploads. Set `ENABLE_IPFS_UPLOADS=true` or provide `ADMIN_TOKEN` for a controlled local recording. If Pinata is not configured, the DApp can still anchor the local file hash onchain.
 
 ## Platform Revenue
 

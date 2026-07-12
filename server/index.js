@@ -6,12 +6,13 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || "127.0.0.1";
 const ROOT = path.join(__dirname, "..");
-const PUBLIC = path.join(ROOT, "public");
-const GATEWAY_API_BASE_URL = process.env.GATEWAY_API_BASE_URL || "https://gateway-api-testnet.circle.com/v1";
+const FRONTEND_DIST = path.join(ROOT, "frontend", "dist");
+const LEGACY_PUBLIC = path.join(ROOT, "public");
+const DEFAULT_GATEWAY_API_BASE_URL = "https://gateway-api-testnet.circle.com/v1";
+const ALLOWED_GATEWAY_DOMAINS = new Set([0, 3, 6, 26]);
 
-// Illustrative sample balances returned only when the live Gateway API is
-// unreachable. The frontend labels these "Sample balances" — never as live.
-// Kept as round figures so they don't imitate real precise balances.
+// Sample balances are opt-in only through ENABLE_GATEWAY_SAMPLE_FALLBACK=true.
+// Keep these rounded so they cannot be mistaken for live Gateway balances.
 const gatewayDemoBalances = [
   { domain: 26, name: "Arc Testnet", balance: "15000.000000" },
   { domain: 6, name: "Base Sepolia", balance: "8000.000000" },
@@ -142,9 +143,19 @@ const mime = {
   ".svg": "image/svg+xml"
 };
 
+function envFlag(env, name, defaultValue = false) {
+  if (env[name] === undefined) return defaultValue;
+  return ["1", "true", "yes", "on"].includes(String(env[name]).toLowerCase());
+}
+
 function sendJson(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body, null, 2));
+}
+
+function sendText(res, status, body) {
+  res.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end(body);
 }
 
 function readBody(req) {
@@ -179,24 +190,113 @@ function addEvent(title, detail) {
   return event;
 }
 
-function serveStatic(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const safePath = path.normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, "");
-  let filePath = path.join(PUBLIC, safePath === "/" ? "index.html" : safePath);
-  if (!filePath.startsWith(PUBLIC)) {
-    res.writeHead(403);
-    res.end("Forbidden");
-    return;
-  }
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    filePath = path.join(PUBLIC, "index.html");
-  }
-  const ext = path.extname(filePath);
-  res.writeHead(200, { "Content-Type": mime[ext] || "application/octet-stream" });
-  fs.createReadStream(filePath).pipe(res);
+function hasAdminAccess(req, env) {
+  if (!env.ADMIN_TOKEN) return false;
+  return req.headers.authorization === `Bearer ${env.ADMIN_TOKEN}`;
 }
 
-async function route(req, res) {
+function canUseDemoMutation(req, env) {
+  return envFlag(env, "ENABLE_DEMO_MUTATIONS") || hasAdminAccess(req, env);
+}
+
+function canUseDemoFallback(req, env) {
+  return envFlag(env, "ENABLE_DEMO_FALLBACKS") || hasAdminAccess(req, env);
+}
+
+function canUseIpfsUpload(req, env) {
+  return envFlag(env, "ENABLE_IPFS_UPLOADS") || hasAdminAccess(req, env);
+}
+
+function forbidden(res, feature) {
+  sendJson(res, 403, {
+    error: `${feature} is disabled for public mode`,
+    hint: "Set the explicit ENABLE_* environment flag locally or provide an admin bearer token for controlled demos."
+  });
+}
+
+function resolveStaticRoot(env) {
+  if (env.STATIC_ROOT) return path.resolve(ROOT, env.STATIC_ROOT);
+  if (env.SERVE_LEGACY_PUBLIC === "true") return LEGACY_PUBLIC;
+  return FRONTEND_DIST;
+}
+
+function isInside(root, target) {
+  const relative = path.relative(root, target);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function serveStatic(req, res, env) {
+  return new Promise((resolve) => {
+    const staticRoot = resolveStaticRoot(env);
+    const indexPath = path.join(staticRoot, "index.html");
+
+    if (!fs.existsSync(indexPath)) {
+      sendText(res, 404, "React build not found. Run `cd frontend && npm run build`, or set SERVE_LEGACY_PUBLIC=true for the old static demo.");
+      resolve();
+      return;
+    }
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = decodeURIComponent(url.pathname);
+    const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    let filePath = path.join(staticRoot, path.normalize(relativePath));
+
+    if (!isInside(staticRoot, filePath)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      resolve();
+      return;
+    }
+
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      filePath = indexPath;
+    }
+
+    const ext = path.extname(filePath);
+    res.writeHead(200, { "Content-Type": mime[ext] || "application/octet-stream" });
+    const stream = fs.createReadStream(filePath);
+    stream.on("end", resolve);
+    stream.on("error", (error) => {
+      sendText(res, 500, error.message);
+      resolve();
+    });
+    stream.pipe(res);
+  });
+}
+
+function validateGatewaySources(sources) {
+  if (!Array.isArray(sources) || sources.length === 0) {
+    throw new Error("sources are required");
+  }
+  if (sources.length > 8) {
+    throw new Error("at most 8 sources are allowed");
+  }
+
+  return sources.map((source) => {
+    const domain = Number(source.domain);
+    const depositor = String(source.depositor || "");
+    if (!ALLOWED_GATEWAY_DOMAINS.has(domain)) {
+      throw new Error(`unsupported Gateway domain: ${source.domain}`);
+    }
+    if (!/^0x[a-fA-F0-9]{40}$/.test(depositor)) {
+      throw new Error("depositor must be an EVM address");
+    }
+    return { domain, depositor };
+  });
+}
+
+function gatewayFallbackBalances(sources) {
+  return sources.map((source, index) => {
+    const match = gatewayDemoBalances.find((item) => item.domain === Number(source.domain));
+    return {
+      domain: Number(source.domain),
+      depositor: source.depositor,
+      balance: match ? match.balance : (2500 + index * 750).toFixed(6)
+    };
+  });
+}
+
+async function route(req, res, env = process.env) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname === "/api/health") {
@@ -204,7 +304,9 @@ async function route(req, res) {
       ok: true,
       app: "StableTrade Passport",
       chain: "Arc Testnet",
-      settlementAsset: "USDC"
+      settlementAsset: "USDC",
+      publicMode: !envFlag(env, "ENABLE_DEMO_MUTATIONS"),
+      staticRoot: path.relative(ROOT, resolveStaticRoot(env))
     });
     return;
   }
@@ -215,6 +317,7 @@ async function route(req, res) {
   }
 
   if (url.pathname === "/api/demo/seed" && req.method === "POST") {
+    if (!canUseDemoMutation(req, env)) return forbidden(res, "Demo seeding");
     const existingIndex = state.invoices.findIndex((invoice) => invoice.id === seededDemoInvoice.id);
     if (existingIndex >= 0) {
       state.invoices[existingIndex] = { ...seededDemoInvoice };
@@ -229,15 +332,19 @@ async function route(req, res) {
 
   if (url.pathname === "/api/gateway/balances" && req.method === "POST") {
     const body = await readBody(req);
-    const sources = Array.isArray(body.sources) ? body.sources : [];
-
-    if (sources.length === 0) {
-      sendJson(res, 400, { error: "sources are required" });
+    let sources;
+    try {
+      sources = validateGatewaySources(body.sources);
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
       return;
     }
 
+    const checkedAt = new Date().toISOString();
+    const gatewayApiBaseUrl = env.GATEWAY_API_BASE_URL || DEFAULT_GATEWAY_API_BASE_URL;
+
     try {
-      const gatewayRes = await fetch(`${GATEWAY_API_BASE_URL.replace(/\/$/, "")}/balances`, {
+      const gatewayRes = await fetch(`${gatewayApiBaseUrl.replace(/\/$/, "")}/balances`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "USDC", sources })
@@ -246,26 +353,40 @@ async function route(req, res) {
       if (!gatewayRes.ok) {
         throw new Error(gatewayBody.error || `Gateway balance request failed: ${gatewayRes.status}`);
       }
-      sendJson(res, 200, { ...gatewayBody, source: "circle-gateway" });
+      sendJson(res, 200, {
+        ...gatewayBody,
+        source: "circle-gateway",
+        live: true,
+        checkedAt,
+        gatewayApiBaseUrl
+      });
     } catch (error) {
+      if (!envFlag(env, "ENABLE_GATEWAY_SAMPLE_FALLBACK")) {
+        sendJson(res, 502, {
+          error: "Gateway balance request failed",
+          source: "circle-gateway",
+          live: false,
+          checkedAt,
+          gatewayApiBaseUrl,
+          warning: error.message
+        });
+        return;
+      }
+
       sendJson(res, 200, {
         token: "USDC",
-        source: "demo-fallback",
+        source: "sample-fallback",
+        live: false,
+        checkedAt,
         warning: error.message,
-        balances: sources.map((source, index) => {
-          const match = gatewayDemoBalances.find((item) => item.domain === Number(source.domain));
-          return {
-            domain: Number(source.domain),
-            depositor: source.depositor,
-            balance: match ? match.balance : (2500 + index * 750).toFixed(6)
-          };
-        })
+        balances: gatewayFallbackBalances(sources)
       });
     }
     return;
   }
 
   if (url.pathname === "/api/cctp/demo-receipt" && req.method === "POST") {
+    if (!canUseDemoFallback(req, env)) return forbidden(res, "CCTP demo receipt");
     const body = await readBody(req);
     const amount = Number(body.amount || 0);
     if (!body.sourceChain || !body.destinationChain || !amount) {
@@ -277,6 +398,7 @@ async function route(req, res) {
       id: `CCTP-${Date.now().toString(36).toUpperCase()}`,
       provider: "Circle App Kit / CCTP v2",
       state: "demo-ready",
+      live: false,
       amount: amount.toFixed(2),
       token: "USDC",
       sourceChain: body.sourceChain,
@@ -291,12 +413,13 @@ async function route(req, res) {
       ],
       createdAt: new Date().toISOString()
     };
-    addEvent("CCTP route prepared", `${receipt.amount} USDC from ${receipt.sourceChain} to ${receipt.destinationChain}.`);
+    addEvent("CCTP demo route prepared", `${receipt.amount} USDC from ${receipt.sourceChain} to ${receipt.destinationChain}.`);
     sendJson(res, 200, { receipt });
     return;
   }
 
   if (url.pathname === "/api/invoices" && req.method === "POST") {
+    if (!canUseDemoMutation(req, env)) return forbidden(res, "Demo invoice creation");
     const body = await readBody(req);
     const amount = Number(body.amount || 0);
     if (!body.buyer || !body.seller || !amount) {
@@ -323,6 +446,7 @@ async function route(req, res) {
   }
 
   if (url.pathname === "/api/ipfs/upload" && req.method === "POST") {
+    if (!canUseIpfsUpload(req, env)) return forbidden(res, "IPFS upload");
     const body = await readBody(req);
     if (!body.fileName || !body.base64) {
       sendJson(res, 400, { error: "fileName and base64 are required" });
@@ -332,7 +456,7 @@ async function route(req, res) {
     const buffer = Buffer.from(body.base64, "base64");
     const hash = crypto.createHash("sha256").update(buffer).digest("hex");
 
-    if (!process.env.PINATA_JWT) {
+    if (!env.PINATA_JWT) {
       sendJson(res, 200, {
         uploaded: false,
         documentHash: `0x${hash}`,
@@ -348,7 +472,7 @@ async function route(req, res) {
     const pinataRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.PINATA_JWT}`
+        Authorization: `Bearer ${env.PINATA_JWT}`
       },
       body: form
     });
@@ -362,8 +486,8 @@ async function route(req, res) {
       uploaded: true,
       cid: pinataBody.IpfsHash,
       uri: `ipfs://${pinataBody.IpfsHash}`,
-      gatewayUrl: process.env.PINATA_GATEWAY
-        ? `${process.env.PINATA_GATEWAY.replace(/\/$/, "")}/ipfs/${pinataBody.IpfsHash}`
+      gatewayUrl: env.PINATA_GATEWAY
+        ? `${env.PINATA_GATEWAY.replace(/\/$/, "")}/ipfs/${pinataBody.IpfsHash}`
         : undefined,
       documentHash: `0x${hash}`
     });
@@ -371,6 +495,7 @@ async function route(req, res) {
   }
 
   if (url.pathname.startsWith("/api/invoices/") && req.method === "POST") {
+    if (!canUseDemoMutation(req, env)) return forbidden(res, "Demo invoice mutation");
     const [, , , id, action] = url.pathname.split("/");
     const invoice = state.invoices.find((item) => item.id === id);
     if (!invoice) {
@@ -400,15 +525,33 @@ async function route(req, res) {
     return;
   }
 
-  serveStatic(req, res);
+  await serveStatic(req, res, env);
 }
 
-const server = http.createServer((req, res) => {
-  route(req, res).catch((error) => {
-    sendJson(res, 500, { error: error.message });
-  });
-});
+function createRequestHandler(options = {}) {
+  const env = options.env || process.env;
+  return async function handleRequest(req, res) {
+    try {
+      await route(req, res, env);
+    } catch (error) {
+      sendJson(res, 500, { error: error.message });
+    }
+  };
+}
 
-server.listen(PORT, HOST, () => {
-  console.log(`StableTrade Passport running at http://${HOST}:${PORT}`);
-});
+function createServer(options = {}) {
+  return http.createServer(createRequestHandler(options));
+}
+
+if (require.main === module) {
+  const server = createServer();
+  server.listen(PORT, HOST, () => {
+    console.log(`StableTrade Passport running at http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  createRequestHandler,
+  createServer,
+  route
+};

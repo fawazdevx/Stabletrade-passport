@@ -92,11 +92,33 @@ contract TradeEscrowV2Test is Test {
         vm.prank(exporter);
         escrow.acceptFinanceBid(invoiceId, bidIndex);
 
+        vm.prank(exporter);
+        escrow.addTradeDocument(invoiceId, TradeEscrowUpgradeableV2.DocumentKind.DeliveryProof, keccak256("delivery-proof"));
+
         vm.prank(importer);
         escrow.releaseOnDelivery(invoiceId);
 
         assertEq(usdc.balanceOf(financier), bidAmount + financeFee);
         assertEq(usdc.balanceOf(exporter), bidAmount + amount - bidAmount - financeFee);
+    }
+
+    function testReleaseRequiresDeliveryProof() public {
+        uint256 amount = 10_000e6;
+
+        usdc.mint(importer, amount);
+
+        vm.prank(importer);
+        uint256 invoiceId = escrow.createInvoice(exporter, amount, 0, keccak256("metadata"));
+
+        vm.prank(importer);
+        usdc.approve(address(escrow), amount);
+
+        vm.prank(importer);
+        escrow.fundEscrow(invoiceId);
+
+        vm.prank(importer);
+        vm.expectRevert("delivery proof required");
+        escrow.releaseOnDelivery(invoiceId);
     }
 
     function testDocumentHashesAndPassport() public {
@@ -112,6 +134,9 @@ contract TradeEscrowV2Test is Test {
         escrow.addTradeDocument(invoiceId, TradeEscrowUpgradeableV2.DocumentKind.Invoice, documentHash);
 
         assertEq(escrow.tradeDocumentCount(invoiceId), 1);
+
+        vm.prank(exporter);
+        escrow.addTradeDocument(invoiceId, TradeEscrowUpgradeableV2.DocumentKind.DeliveryProof, keccak256("delivery-proof"));
 
         vm.prank(importer);
         usdc.approve(address(escrow), amount);

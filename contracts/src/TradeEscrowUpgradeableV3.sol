@@ -27,6 +27,7 @@ contract TradeEscrowUpgradeableV3 is TradeEscrowUpgradeableV2 {
         Invoice storage invoice = invoices[invoiceId];
         require(msg.sender == invoice.importer, "only importer");
         require(invoice.status == Status.Escrowed || invoice.status == Status.Advanced, "not releasable");
+        _requireDeliveryProof(invoiceId);
 
         address importer = invoice.importer;
         address exporter = invoice.exporter;

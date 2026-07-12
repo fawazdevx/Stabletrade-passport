@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {StableTradeFactory} from "../src/StableTradeFactory.sol";
 import {TradeEscrowUpgradeable} from "../src/TradeEscrowUpgradeable.sol";
+import {TradeEscrowUpgradeableV2} from "../src/TradeEscrowUpgradeableV2.sol";
 import {TradeEscrowUpgradeableV3} from "../src/TradeEscrowUpgradeableV3.sol";
 import {MockUSDC} from "./StableTradeFactory.t.sol";
 
@@ -52,12 +53,34 @@ contract TradeEscrowV3Test is Test {
         vm.prank(importer);
         escrow.fundEscrow(invoiceId);
 
+        vm.prank(exporter);
+        escrow.addTradeDocument(invoiceId, TradeEscrowUpgradeableV2.DocumentKind.DeliveryProof, keccak256("delivery-proof"));
+
         vm.prank(importer);
         escrow.releaseOnDelivery(invoiceId);
 
         assertEq(usdc.balanceOf(feeRecipient), expectedFee);
         assertEq(usdc.balanceOf(exporter), amount - expectedFee);
         assertEq(escrow.protocolFeesAccrued(), expectedFee);
+    }
+
+    function testProtocolFeeSettlementRequiresDeliveryProof() public {
+        uint256 amount = 10_000e6;
+
+        usdc.mint(importer, amount);
+
+        vm.prank(importer);
+        uint256 invoiceId = escrow.createInvoice(exporter, amount, 0, keccak256("metadata"));
+
+        vm.prank(importer);
+        usdc.approve(address(escrow), amount);
+
+        vm.prank(importer);
+        escrow.fundEscrow(invoiceId);
+
+        vm.prank(importer);
+        vm.expectRevert("delivery proof required");
+        escrow.releaseOnDelivery(invoiceId);
     }
 
     function testFinancierFeeAndProtocolFeeWaterfall() public {
@@ -89,6 +112,9 @@ contract TradeEscrowV3Test is Test {
 
         vm.prank(exporter);
         escrow.acceptFinanceBid(invoiceId, bidIndex);
+
+        vm.prank(exporter);
+        escrow.addTradeDocument(invoiceId, TradeEscrowUpgradeableV2.DocumentKind.DeliveryProof, keccak256("delivery-proof"));
 
         vm.prank(importer);
         escrow.releaseOnDelivery(invoiceId);

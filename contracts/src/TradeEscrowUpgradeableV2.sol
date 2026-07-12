@@ -122,6 +122,7 @@ contract TradeEscrowUpgradeableV2 is TradeEscrowUpgradeable {
         Invoice storage invoice = invoices[invoiceId];
         require(msg.sender == invoice.importer, "only importer");
         require(invoice.status == Status.Escrowed || invoice.status == Status.Advanced, "not releasable");
+        _requireDeliveryProof(invoiceId);
 
         address importer = invoice.importer;
         address exporter = invoice.exporter;
@@ -191,6 +192,24 @@ contract TradeEscrowUpgradeableV2 is TradeEscrowUpgradeable {
 
     function tradeDocument(uint256 invoiceId, uint256 documentIndex) external view returns (TradeDocument memory) {
         return tradeDocuments[invoiceId][documentIndex];
+    }
+
+    function hasTradeDocument(uint256 invoiceId, DocumentKind kind) external view returns (bool) {
+        return _hasTradeDocument(invoiceId, kind);
+    }
+
+    function _requireDeliveryProof(uint256 invoiceId) internal view {
+        require(_hasTradeDocument(invoiceId, DocumentKind.DeliveryProof), "delivery proof required");
+    }
+
+    function _hasTradeDocument(uint256 invoiceId, DocumentKind kind) internal view returns (bool) {
+        TradeDocument[] storage documents = tradeDocuments[invoiceId];
+        for (uint256 index = 0; index < documents.length; index += 1) {
+            if (documents[index].kind == kind) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function passport(address account)

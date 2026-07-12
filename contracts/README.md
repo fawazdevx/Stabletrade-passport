@@ -1,171 +1,97 @@
-## Foundry
+# StableTrade Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Upgradeable Arc Testnet contracts for StableTrade Passport.
 
-Foundry consists of:
+## Active Stack
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+| Component | Address |
+| --- | --- |
+| TradeEscrow proxy | `0xF167a3f1E362dBDC7d365A9Cb9340C8513e7188b` |
+| StableTradeFactory | `0x2d34ff5B7418e8c1Fcf3EAEc1aeC16EDc7aa6586` |
+| Current frontend implementation reference | `0x6f62468D584406d177460Ad2353c7D2C19Ecf6bB` |
+| Arc Testnet USDC | `0x3600000000000000000000000000000000000000` |
+| Chain ID | `5042002` |
 
-## Documentation
+The DApp should keep using the proxy address. Implementation addresses change after upgrades.
 
-https://book.getfoundry.sh/
+## Versions
 
-## Usage
+| Version | Contract | Main capability |
+| --- | --- | --- |
+| V1 | `TradeEscrowUpgradeable` | Invoice creation, escrow funding, advance payment, settlement, disputes, pause controls |
+| V2 | `TradeEscrowUpgradeableV2` | Finance bids, exporter bid acceptance, document hashes, credit passport counters, delivery-proof-gated release |
+| V3 | `TradeEscrowUpgradeableV3` | V2 plus protocol fees and settlement waterfall accounting |
 
-### Build
+Current code requires a `DocumentKind.DeliveryProof` document before `releaseOnDelivery(invoiceId)` succeeds. Existing deployed implementations do not pick up that requirement until you deploy the new implementation and upgrade the proxy.
 
-```shell
-$ forge build
+## Fresh Clone Test Setup
+
+This repo vendors a tiny `forge-std` compatibility shim under `contracts/lib/forge-std/src` so `forge test` works from a fresh clone without a network install.
+
+```bash
+cd contracts
+forge build
+forge test
 ```
 
-### Test
+## Upgrade V3 Proxy
 
-```shell
-$ forge test
+Use the encrypted Foundry account already imported on your machine:
+
+```bash
+source .env
+forge script script/UpgradeTradeEscrowV3.s.sol:UpgradeTradeEscrowV3 \
+  --rpc-url $ARC_RPC_URL \
+  --chain-id $ARC_CHAIN_ID \
+  --account deploytestKey \
+  --sender $OWNER \
+  --broadcast
 ```
 
-### Format
+Required `.env` values:
 
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Deploy Legacy TradeEscrow
-
-Copy the example environment file and fill in Arc testnet values:
-
-```shell
-$ cp .env.example .env
-```
-
-Required values:
-
-- `ARC_RPC_URL`: Arc testnet RPC URL.
-- `ARC_CHAIN_ID`: Arc testnet chain ID.
-- `OWNER`: deployer address.
-- `USDC_ADDRESS`: Arc testnet USDC token address.
-
-This deploy script uses `vm.startBroadcast()` so Forge can use the signer you provide on the command line, including `--account`.
-
-Deploy:
-
-```shell
-$ source .env
-$ forge script script/DeployTradeEscrow.s.sol:DeployTradeEscrow --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --account deploytestKey --sender $OWNER --broadcast
-```
-
-For a local dry run without broadcasting:
-
-```shell
-$ source .env
-$ forge script script/DeployTradeEscrow.s.sol:DeployTradeEscrow --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --account deploytestKey --sender $OWNER
-```
-
-### Deploy Upgradeable StableTrade Stack
-
-Use this for the production hackathon demo path. It deploys:
-
-- `TradeEscrowUpgradeable`: implementation contract.
-- `StableTradeFactory`: owner-controlled factory and proxy admin.
-- `StableTradeProxy`: EIP-1967-style proxy initialized with USDC and owner.
-
-```shell
-$ source .env
-$ forge script script/DeployStableTradeFactory.s.sol:DeployStableTradeFactory --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --account deploytestKey --sender $OWNER --broadcast
-```
-
-The script prints three important addresses:
-
-- `TradeEscrow implementation`
-- `StableTradeFactory`
-- `TradeEscrow proxy`
-
-Use the proxy address in the DApp. The implementation address can change after upgrades, but the proxy address should remain the stable application address.
-
-### Upgrade Flow
-
-For future updates:
-
-1. Deploy a new implementation contract.
-2. Call `StableTradeFactory.upgradeEscrow(proxy, newImplementation)` from the factory owner.
-3. Keep using the same proxy address in the frontend.
-
-The included tests cover proxy initialization, escrow settlement, pause controls, and factory-driven upgrades.
-
-### Upgrade to TradeEscrow V2
-
-V2 adds:
-
-- Financier bid marketplace.
-- Exporter bid acceptance.
-- Document hash anchoring.
-- Credit passport counters and score.
-
-Add these values to `.env`:
-
-```shell
+```bash
+ARC_RPC_URL=https://rpc.testnet.arc.network
+ARC_CHAIN_ID=5042002
+OWNER=0x...
 STABLE_TRADE_FACTORY=0x2d34ff5B7418e8c1Fcf3EAEc1aeC16EDc7aa6586
 TRADE_ESCROW_PROXY=0xF167a3f1E362dBDC7d365A9Cb9340C8513e7188b
-```
-
-Then run:
-
-```shell
-$ source .env
-$ forge script script/UpgradeTradeEscrowV2.s.sol:UpgradeTradeEscrowV2 --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --account deploytestKey --sender $OWNER --broadcast
-```
-
-After the upgrade, the frontend will detect `version() == "2.0.0"` and enable marketplace bids, bid acceptance, document hashes, and contract-native passport analytics.
-
-### Upgrade to TradeEscrow V3
-
-V3 adds protocol fees so the platform owner can earn from settled trade flows.
-
-```shell
-FEE_RECIPIENT=0xyour_fee_recipient_address
+FEE_RECIPIENT=0x...
 PROTOCOL_FEE_BPS=50
 ```
 
-`50` bps means `0.5%` of the exporter payout on settlement.
+After the script completes:
 
-Upgrade:
+1. Copy the printed `TradeEscrow V3 implementation` address into `frontend/.env.local` if you want the System page to display the exact implementation reference.
+2. Keep `VITE_TRADE_ESCROW_PROXY` unchanged.
+3. Run `cast call $TRADE_ESCROW_PROXY "version()(string)" --rpc-url $ARC_RPC_URL` and confirm `3.0.0`.
+4. Recheck the product walkthrough, because the delivery-proof gate only exists after the proxy upgrade.
 
-```shell
-$ source .env
-$ forge script script/UpgradeTradeEscrowV3.s.sol:UpgradeTradeEscrowV3 --rpc-url $ARC_RPC_URL --chain-id $ARC_CHAIN_ID --account deploytestKey --sender $OWNER --broadcast
-```
+## Settlement Rules
 
-### Cast
+`releaseOnDelivery(invoiceId)` now checks:
 
-```shell
-$ cast <subcommand>
-```
+- caller is the importer,
+- invoice is `Escrowed` or `Advanced`,
+- at least one `DeliveryProof` document hash exists,
+- financier repayment does not exceed escrow,
+- protocol fee is at most `300` bps and is configured by the owner.
 
-### Help
+For financed trades, the waterfall is:
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+1. Importer escrow funds the invoice.
+2. Financier advances USDC to exporter after the exporter accepts a bid.
+3. Importer anchors or verifies delivery proof.
+4. Settlement repays financier principal plus accepted fee.
+5. Protocol fee is deducted from the exporter remainder.
+6. Exporter receives final payout.
+
+## Tests
+
+The tests cover:
+
+- V2 bid acceptance and document anchoring,
+- V2 release reverting without delivery proof,
+- V3 protocol-fee settlement,
+- V3 release reverting without delivery proof,
+- upgradeable factory and proxy behavior.

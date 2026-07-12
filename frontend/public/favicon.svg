@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="StableTrade Passport">
+  <defs>
+    <linearGradient id="tealGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <!-- App-tile background (matches the in-app logo) -->
+  <rect width="48" height="48" rx="11" fill="#0b0f19"/>
+  <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#tealGrad)"/>
+  <!-- Trust shield -->
+  <path d="M24 9.5 13.5 13.5V22.5C13.5 28.8 18.3 33.4 24 35 29.7 33.4 34.5 28.8 34.5 22.5V13.5L24 9.5Z" fill="#ffffff"/>
+  <!-- Settlement checkmark -->
+  <path d="M19.4 23.2 22.6 26.4 29 19.8" fill="none" stroke="#0d9488" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

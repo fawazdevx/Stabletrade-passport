@@ -156,8 +156,11 @@
     min-width: 0;
   }
 
+  /* Break long unbreakable strings (addresses, hashes) only when they can't
+     fit — never shatter normal multi-word labels into vertical letter stacks.
+     Elements that must hard-break (raw hashes) opt in with `break-all`. */
   .panel :where(p, span, strong, a, button, label) {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   /* Labels above titles — neutral so teal stays meaningful */
@@ -284,8 +287,9 @@
     background: radial-gradient(440px circle at var(--mx, -200px) var(--my, -200px), rgba(129, 140, 248, 0.14), transparent 60%);
   }
 
-  /* Keep real content above the ambient layers */
-  .app-shell > * {
+  /* Keep real content above the ambient layers — but never clobber the
+     position of fixed chrome (the sidebar rail and its mobile scrim). */
+  .app-shell > *:not([class*="fixed"]) {
     position: relative;
     z-index: 1;
   }
