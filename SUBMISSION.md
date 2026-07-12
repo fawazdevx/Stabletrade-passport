@@ -6,7 +6,7 @@
 
 ## 1. Project Title
 
-**StableTrade Passport** — Escrow-secured invoice financing and a portable SME credit passport, settled in USDC on Arc.
+**StableTrade Passport** - Escrow-secured invoice financing and a portable SME credit passport, settled in USDC on Arc.
 
 ---
 
@@ -18,7 +18,7 @@ StableTrade Passport turns a single cross-border trade into escrowed USDC settle
 
 ## 3. Full Description
 
-**The problem.** SMEs that trade across borders wait weeks for invoices to settle. Importers refuse to release funds without proof of delivery. Exporters need working capital *before* they ship. Financiers who could bridge that gap have no reliable, verifiable repayment history to price the risk. The result is trapped working capital, expensive credit, and stalled trade — especially on emerging-market corridors (UAE → Nigeria, Rwanda, Ghana).
+**The problem.** SMEs that trade across borders wait weeks for invoices to settle. Importers refuse to release funds without proof of delivery. Exporters need working capital *before* they ship. Financiers who could bridge that gap have no reliable, verifiable repayment history to price the risk. The result is trapped working capital, expensive credit, and stalled trade, especially on emerging-market corridors (UAE → Nigeria, Rwanda, Ghana).
 
 **The solution.** StableTrade Passport runs the entire trade-finance lifecycle on programmable stablecoin rails:
 
@@ -86,7 +86,7 @@ A fully functional testnet MVP — not mocks. It includes:
 | --- | --- |
 | TradeEscrow proxy | `0xF167a3f1E362dBDC7d365A9Cb9340C8513e7188b` |
 | StableTradeFactory | `0x2d34ff5B7418e8c1Fcf3EAEc1aeC16EDc7aa6586` |
-| TradeEscrow implementation | `0x6f62468D584406d177460Ad2353c7D2C19Ecf6bB` |
+| TradeEscrow implementation | `0x9fdbC80D2f7EDE59C46695C428Aa565c424b0650` |
 | Arc Testnet USDC | `0x3600000000000000000000000000000000000000` |
 | Explorer | https://testnet.arcscan.app |
 
@@ -171,8 +171,7 @@ Copy-paste into the challenge form:
 - **GitHub Repository Link:** https://github.com/fawazdevx/Stabletrade-passport
 - **Product Demo Video Link:** `<REPLACE_WITH_YOUR_VIDEO_URL>`
 - **Live MVP:** https://stabletradepassport.vercel.app
-- **Circle account email:** `<REPLACE_WITH_YOUR_CIRCLE_ACCOUNT_EMAIL>`
-- **Submission Document:** upload this file (export `SUBMISSION.md` to PDF)
+- **Circle account email:** `oyebodefawaz2020@gmail.com`
 
 ---
 
